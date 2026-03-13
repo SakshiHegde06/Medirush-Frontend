@@ -14,6 +14,9 @@ import AnalysisResult from "./pages/AnalysisResult"
 import HospitalFinder from "./pages/HospitalFinder"
 import AppointmentSlots from "./pages/AppointmentSlots"
 import Payment from "./pages/Payment"
+import OnlineConsult from "./pages/OnlineConsult"
+import ConsultRoom from "./pages/ConsultRoom"
+import MedicalRecords from "./pages/MedicalRecords"
 
 function ProtectedRoute({ children, requiredType }) {
   const { currentUser, userType } = useApp()
@@ -35,6 +38,9 @@ function AppRoutes() {
         <Route path="/patient/hospitals" element={<ProtectedRoute requiredType="patient"><HospitalFinder /></ProtectedRoute>} />
         <Route path="/patient/slots/:hospitalId" element={<ProtectedRoute requiredType="patient"><AppointmentSlots /></ProtectedRoute>} />
         <Route path="/patient/payment" element={<ProtectedRoute requiredType="patient"><Payment /></ProtectedRoute>} />
+        <Route path="/patient/consult" element={<ProtectedRoute requiredType="patient"><OnlineConsult /></ProtectedRoute>} />
+        <Route path="/patient/consult/:doctorId" element={<ProtectedRoute requiredType="patient"><ConsultRoom /></ProtectedRoute>} />
+        <Route path="/patient/records" element={<ProtectedRoute requiredType="patient"><MedicalRecords /></ProtectedRoute>} />
         <Route path="/doctor/dashboard" element={<ProtectedRoute requiredType="doctor"><DoctorDashboard /></ProtectedRoute>} />
         <Route path="/admin/dashboard" element={<ProtectedRoute requiredType="admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />

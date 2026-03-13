@@ -93,14 +93,16 @@ export function analyzeSymptoms(selectedSymptoms, description) {
 
   return results.sort((a, b) => b.confidence - a.confidence).slice(0, 3);
 }
-
 export const MOCK_HOSPITALS = [
-  { id: 'H1', name: 'Apollo Hospitals', address: 'Jubilee Hills, Hyderabad', distance: '1.2 km', rating: 4.8, beds: 450, emergency: true, specialties: ['Cardiology', 'Gastroenterology', 'Neurology', 'Pulmonology', 'General Medicine', 'Orthopedics'] },
-  { id: 'H2', name: 'Fortis Healthcare', address: 'Bannerghatta Rd, Bangalore', distance: '2.5 km', rating: 4.6, beds: 280, emergency: true, specialties: ['Cardiology', 'Urology', 'Dermatology', 'Endocrinology', 'General Medicine'] },
-  { id: 'H3', name: 'Manipal Hospitals', address: 'HAL Airport Rd, Bangalore', distance: '3.8 km', rating: 4.7, beds: 600, emergency: true, specialties: ['Pulmonology', 'Neurology', 'Infectious Disease', 'Gastroenterology', 'Psychiatry'] },
-  { id: 'H4', name: 'Narayana Health', address: 'Electronic City, Bangalore', distance: '5.1 km', rating: 4.5, beds: 350, emergency: false, specialties: ['Cardiology', 'Dermatology', 'General Medicine', 'Endocrinology'] },
-  { id: 'H5', name: 'KIMS Hospital', address: 'Secunderabad, Hyderabad', distance: '6.3 km', rating: 4.4, beds: 200, emergency: true, specialties: ['Orthopedics', 'Neurology', 'General Medicine', 'Urology', 'Psychiatry'] },
-];
+  { id: "H001", name: "Manipal Hospital", address: "98, HAL Airport Rd, Bangalore", specialty: ["Cardiology","Neurology","General Medicine"], lat: 12.9592, lng: 77.6488, beds: 12, rating: 4.7 },
+  { id: "H002", name: "Fortis Hospital Bannerghatta", address: "154/9, Bannerghatta Rd, Bangalore", specialty: ["Pulmonology","Cardiology","Gastroenterology"], lat: 12.8846, lng: 77.5975, beds: 8, rating: 4.5 },
+  { id: "H003", name: "Narayana Health City", address: "258/A, Bommasandra, Bangalore", specialty: ["Cardiology","Neurology","Dermatology"], lat: 12.8340, lng: 77.6710, beds: 20, rating: 4.8 },
+  { id: "H004", name: "Apollo Hospital Jayanagar", address: "154, 11th Main Rd, Jayanagar, Bangalore", specialty: ["General Medicine","Gastroenterology","Dermatology"], lat: 12.9249, lng: 77.5833, beds: 5, rating: 4.6 },
+  { id: "H005", name: "NIMHANS", address: "Hosur Rd, Lakkasandra, Bangalore", specialty: ["Neurology","General Medicine"], lat: 12.9399, lng: 77.5956, beds: 15, rating: 4.9 },
+  { id: "H006", name: "Sakra World Hospital", address: "52/2, 1st Cross Rd, Devarabisanahalli, Bangalore", specialty: ["Pulmonology","Gastroenterology","Cardiology"], lat: 12.9698, lng: 77.7099, beds: 9, rating: 4.6 },
+  { id: "H007", name: "Columbia Asia Hebbal", address: "Kirloskar Business Park, Hebbal, Bangalore", specialty: ["General Medicine","Dermatology","Neurology"], lat: 13.0473, lng: 77.5987, beds: 7, rating: 4.4 },
+  { id: "H008", name: "BGS Gleneagles Global Hospital", address: "67, Uttarahalli Rd, Kengeri, Bangalore", specialty: ["Cardiology","Pulmonology","Gastroenterology"], lat: 12.9079, lng: 77.4977, beds: 11, rating: 4.5 },
+]
 
 export const MOCK_SLOTS = [
   '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',

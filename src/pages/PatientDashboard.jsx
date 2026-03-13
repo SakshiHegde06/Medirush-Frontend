@@ -136,20 +136,36 @@ export default function PatientDashboard() {
                 {currentUser?.name || "Patient"} 👋
               </h1>
             </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {[["🩺", t.checkSymptoms, "checker"], ["📅", t.appointments, "appointments"], ["📋", t.healthHistory, "history"]].map(([icon, label, tab]) => (
-                <button key={tab} onClick={() => setActiveTab(tab)} style={{
-                  padding: "8px 18px", borderRadius: 8, border: "1px solid",
-                  background: activeTab === tab ? "var(--teal)" : "transparent",
-                  borderColor: activeTab === tab ? "var(--teal)" : "var(--border)",
-                  color: activeTab === tab ? "var(--navy)" : "var(--text-secondary)",
-                  cursor: "pointer", fontFamily: "inherit", fontSize: "0.82rem", fontWeight: 600,
-                  transition: "all 0.2s",
-                }}>
-                  {icon} {label}
-                </button>
-              ))}
-            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+  {[['🩺', 'Check Symptoms', 'checker'], ['📅', 'Appointments', 'appointments'], ['📋', 'Health History', 'history']].map(([icon, label, tab]) => (
+    <button key={tab} onClick={() => setActiveTab(tab)} style={{
+      padding: '8px 18px', borderRadius: 8, border: '1px solid',
+      background: activeTab === tab ? 'var(--teal)' : 'transparent',
+      borderColor: activeTab === tab ? 'var(--teal)' : 'var(--border)',
+      color: activeTab === tab ? 'var(--navy)' : 'var(--text-secondary)',
+      cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 600,
+      transition: 'all 0.2s',
+    }}>
+      {icon} {label}
+    </button>
+  ))}
+  <button onClick={() => navigate('/patient/consult')} style={{
+    padding: '8px 18px', borderRadius: 8, border: '1px solid var(--border)',
+    background: 'transparent', color: 'var(--text-secondary)',
+    cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 600,
+    transition: 'all 0.2s',
+  }}>
+    🎥 Online Consult
+  </button>
+  <button onClick={() => navigate('/patient/records')} style={{
+    padding: '8px 18px', borderRadius: 8, border: '1px solid var(--border)',
+    background: 'transparent', color: 'var(--text-secondary)',
+    cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 600,
+    transition: 'all 0.2s',
+  }}>
+    📋 Medical Records
+  </button>
+</div>
           </div>
         </div>
 
@@ -375,3 +391,4 @@ export default function PatientDashboard() {
     </div>
   )
 }
+
