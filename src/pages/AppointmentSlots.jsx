@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Navbar from "../components/Navbar"
@@ -15,8 +15,13 @@ export default function AppointmentSlots() {
 
   const hospital = MOCK_HOSPITALS.find(h => h.id === hospitalId) || MOCK_HOSPITALS[0]
   const specialty = analysisResult?.results?.[0]?.specialty || "General Medicine"
-  const availableDoctors = doctors.filter(d => d.status === "verified" && (d.specialty === specialty || d.hospital === hospital.name))
-  const displayDoctors = availableDoctors.length > 0 ? availableDoctors : doctors.filter(d => d.status === "verified").slice(0, 2)
+  const hospitalKeyword = hospital.name?.split(' ')[0]?.toLowerCase()
+  const availableDoctors = doctors.filter(d =>
+    d.status === 'verified' &&
+    d.specialty === specialty &&
+    d.hospital?.toLowerCase().includes(hospitalKeyword)
+  )
+  const displayDoctors = availableDoctors.length > 0 ? availableDoctors : doctors.filter(d => d.status === "verified" && d.specialty === specialty).slice(0, 5)
 
   const [selectedDate, setSelectedDate] = useState(DATES[0])
   const [selectedSlot, setSelectedSlot] = useState(null)
@@ -47,12 +52,12 @@ export default function AppointmentSlots() {
       <Navbar />
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 24px", position: "relative", zIndex: 1 }}>
         <button onClick={() => navigate("/patient/hospitals")} style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "0.85rem", marginBottom: 32, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
-          ← Back to Hospitals
+          â† Back to Hospitals
         </button>
 
         <div style={{ marginBottom: 32, animation: "fadeInUp 0.5s ease forwards" }}>
           <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "2rem", marginBottom: 6 }}>{hospital.name}</h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>📍 {hospital.address} · Book an appointment</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>ðŸ“ {hospital.address} Â· Book an appointment</p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24 }}>
@@ -78,13 +83,13 @@ export default function AppointmentSlots() {
                       </div>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: "0.92rem" }}>{doc.name}</div>
-                        <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>{doc.qualification} · {doc.specialty}</div>
+                        <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>{doc.qualification} Â· {doc.specialty}</div>
                         <div style={{ color: "var(--text-dim)", fontSize: "0.75rem", marginTop: 2 }}>{doc.hospital}</div>
                       </div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                       <span className="badge badge-success">Available</span>
-                      {selectedDoctor?.id === doc.id && <span style={{ color: "var(--teal)" }}>✓</span>}
+                      {selectedDoctor?.id === doc.id && <span style={{ color: "var(--teal)" }}>âœ“</span>}
                     </div>
                   </div>
                 ))}
@@ -152,16 +157,16 @@ export default function AppointmentSlots() {
               <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: 20 }}>Booking Summary</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
                 {[
-                  ["🏥 Hospital", hospital.name],
-                  ["🩺 Doctor", selectedDoctor ? selectedDoctor.name : "—"],
-                  ["🔬 Specialty", specialty],
-                  ["📅 Date", selectedDate || "—"],
-                  ["🕐 Time", selectedSlot || "—"],
-                  ["🫀 Concern", analysisResult?.results?.[0]?.disease || "General Consultation"],
+                  ["ðŸ¥ Hospital", hospital.name],
+                  ["ðŸ©º Doctor", selectedDoctor ? selectedDoctor.name : "â€”"],
+                  ["ðŸ”¬ Specialty", specialty],
+                  ["ðŸ“… Date", selectedDate || "â€”"],
+                  ["ðŸ• Time", selectedSlot || "â€”"],
+                  ["ðŸ«€ Concern", analysisResult?.results?.[0]?.disease || "General Consultation"],
                 ].map(([label, value]) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <span style={{ color: "var(--text-secondary)", fontSize: "0.82rem" }}>{label}</span>
-                    <span style={{ fontSize: "0.85rem", fontWeight: 500, color: value === "—" ? "var(--text-dim)" : "var(--text-primary)", textAlign: "right", maxWidth: 150 }}>{value}</span>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 500, color: value === "â€”" ? "var(--text-dim)" : "var(--text-primary)", textAlign: "right", maxWidth: 150 }}>{value}</span>
                   </div>
                 ))}
               </div>
@@ -170,7 +175,7 @@ export default function AppointmentSlots() {
 
               {/* Token amount notice */}
               <div style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 8, padding: "10px 12px", fontSize: "0.76rem", color: "var(--coral)", marginBottom: 16, lineHeight: 1.6 }}>
-                ₹250 token required · Non-refundable
+                â‚¹250 token required Â· Non-refundable
               </div>
 
               <button
@@ -179,7 +184,7 @@ export default function AppointmentSlots() {
                 disabled={!selectedSlot || !selectedDoctor}
                 style={{ width: "100%", padding: "14px", fontSize: "0.95rem", opacity: (!selectedSlot || !selectedDoctor) ? 0.5 : 1 }}
               >
-                Proceed to Pay ₹250 →
+                Proceed to Pay â‚¹250 â†’
               </button>
             </div>
           </div>
@@ -188,3 +193,5 @@ export default function AppointmentSlots() {
     </div>
   )
 }
+
+

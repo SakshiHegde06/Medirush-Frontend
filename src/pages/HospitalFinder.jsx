@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+﻿import React, { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import { MOCK_HOSPITALS } from "../data/symptoms"
@@ -49,8 +49,8 @@ export default function HospitalFinder() {
         })).sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance))
 
         // Filter by disease specialty if available
-        const diagnosis = analysisResult?.disease
-        const specialty = analysisResult?.specialty
+        const diagnosis = analysisResult?.[0]?.disease || analysisResult?.disease
+        const specialty = analysisResult?.[0]?.specialty || analysisResult?.specialty
         const filtered = specialty
           ? withDistance.filter(h => h.specialty.some(s => s === specialty || s === "General Medicine"))
           : withDistance
@@ -82,12 +82,12 @@ export default function HospitalFinder() {
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px", position: "relative", zIndex: 1 }}>
 
         <button onClick={() => navigate("/patient/analysis")} style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "0.85rem", marginBottom: 32, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
-          ← Back to Analysis
+          â† Back to Analysis
         </button>
 
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "2rem", marginBottom: 8 }}>
-            🏥 Nearby Hospitals
+            ðŸ¥ Nearby Hospitals
           </h1>
           {loading ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text-secondary)", fontSize: "0.88rem" }}>
@@ -96,13 +96,13 @@ export default function HospitalFinder() {
             </div>
           ) : (
             <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-              📍 Showing hospitals near <strong style={{ color: "var(--teal)" }}>{cityName}</strong>
-              {analysisResult?.disease && <> · Filtered for <strong style={{ color: "var(--teal)" }}>{analysisResult.disease}</strong></>}
+              ðŸ“ Showing hospitals near <strong style={{ color: "var(--teal)" }}>{cityName}</strong>
+              {analysisResult?.disease && <> Â· Filtered for <strong style={{ color: "var(--teal)" }}>{analysisResult.disease}</strong></>}
             </p>
           )}
           {locError && (
             <div style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.25)", borderRadius: 8, padding: "10px 14px", fontSize: "0.8rem", color: "var(--coral)", marginTop: 10 }}>
-              ⚠️ {locError}
+              âš ï¸ {locError}
             </div>
           )}
         </div>
@@ -129,10 +129,10 @@ export default function HospitalFinder() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
                       <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>{h.name}</h3>
-                      {i === 0 && <span style={{ fontSize: "0.7rem", padding: "2px 8px", borderRadius: 100, background: "rgba(0,201,167,0.15)", color: "var(--teal)", border: "1px solid rgba(0,201,167,0.3)", fontWeight: 700 }}>📍 Nearest</span>}
-                      <span style={{ fontSize: "0.7rem", color: "var(--amber)" }}>⭐ {h.rating}</span>
+                      {i === 0 && <span style={{ fontSize: "0.7rem", padding: "2px 8px", borderRadius: 100, background: "rgba(0,201,167,0.15)", color: "var(--teal)", border: "1px solid rgba(0,201,167,0.3)", fontWeight: 700 }}>ðŸ“ Nearest</span>}
+                      <span style={{ fontSize: "0.7rem", color: "var(--amber)" }}>â­ {h.rating}</span>
                     </div>
-                    <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: 10 }}>🏠 {h.address}</p>
+                    <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: 10 }}>ðŸ  {h.address}</p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {h.specialty.map(s => (
                         <span key={s} style={{
@@ -152,12 +152,12 @@ export default function HospitalFinder() {
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: "0.75rem", color: h.beds > 10 ? "var(--teal)" : h.beds > 5 ? "var(--amber)" : "var(--coral)", fontWeight: 700 }}>
-                        {h.beds > 10 ? "🟢" : h.beds > 5 ? "🟡" : "🔴"} {h.beds} beds available
+                        {h.beds > 10 ? "ðŸŸ¢" : h.beds > 5 ? "ðŸŸ¡" : "ðŸ”´"} {h.beds} beds available
                       </div>
                     </div>
                     <button className="btn-primary" onClick={() => navigate(`/patient/slots/${h.id}`)}
                       style={{ padding: "8px 20px", fontSize: "0.82rem" }}>
-                      Book Slot →
+                      Book Slot â†’
                     </button>
                   </div>
                 </div>

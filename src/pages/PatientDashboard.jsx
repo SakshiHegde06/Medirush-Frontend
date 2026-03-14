@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import { useApp } from "../context/AppContext"
 import { getMyAppointments } from "../api/index"
+import RatingModal from "../components/RatingModal"
 import { SYMPTOMS, CATEGORIES, analyzeSymptoms } from "../data/symptoms"
 
 export default function PatientDashboard() {
@@ -14,6 +15,8 @@ export default function PatientDashboard() {
   const [analyzing, setAnalyzing] = useState(false)
   const [appointments, setAppointments] = useState([])
   const [loadingApts, setLoadingApts] = useState(false)
+  const [ratingApt, setRatingApt] = useState(null)
+  const [ratedIds, setRatedIds] = useState([])
 
   useEffect(() => {
     if (activeTab === "appointments") fetchAppointments()
@@ -36,13 +39,9 @@ export default function PatientDashboard() {
 
   const handleAnalyze = () => {
     if (selectedSymptoms.length === 0) return
-    setAnalyzing(true)
-    setTimeout(() => {
-      const result = analyzeSymptoms(selectedSymptoms, description)
-      setAnalysisResult(result)
-      setAnalyzing(false)
-      navigate("/patient/analysis")
-    }, 2000)
+    const result = analyzeSymptoms(selectedSymptoms, description)
+    setAnalysisResult(result)
+    navigate("/patient/analysis")
   }
 
   const statusColor = { pending: "var(--amber)", accepted: "var(--teal)", rejected: "var(--coral)", completed: "#a78bfa", cancelled: "var(--text-dim)" }
@@ -206,3 +205,5 @@ export default function PatientDashboard() {
     </div>
   )
 }
+
+
