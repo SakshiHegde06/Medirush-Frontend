@@ -40,7 +40,7 @@ export default function PatientDashboard() {
   const handleAnalyze = () => {
     if (selectedSymptoms.length === 0) return
     const result = analyzeSymptoms(selectedSymptoms, description)
-    setAnalysisResult(result)
+    setAnalysisResult({ results: result, selectedSymptoms })
     navigate("/patient/analysis")
   }
 
@@ -205,5 +205,6 @@ export default function PatientDashboard() {
     </div>
   )
 }
+
 
 
