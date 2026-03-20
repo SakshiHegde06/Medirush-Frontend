@@ -1,16 +1,24 @@
-﻿import React, { useState } from "react"
+﻿import React, { useState, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import { useApp } from "../context/AppContext"
 import { MOCK_HOSPITALS, MOCK_SLOTS } from "../data/symptoms"
 
-const DATES = [
-  "2026-03-15", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20"
+const ALL_SLOTS = [
+  "8:00 AM","8:30 AM","9:00 AM","9:30 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM",
+  "12:00 PM","12:30 PM","2:00 PM","2:30 PM","3:00 PM","3:30 PM","4:00 PM","4:30 PM","5:00 PM","5:30 PM"
 ]
 
-const bookedSlots = {
-  "2026-03-15": ["9:00 AM", "10:30 AM", "2:00 PM"],
-  "2026-03-16": ["9:30 AM", "11:00 AM", "3:30 PM"],
+const DATES = [
+  "2026-03-21","2026-03-22","2026-03-23","2026-03-24","2026-03-25","2026-03-26"
+]
+
+function getDoctorSlots(doctorId, date) {
+  const seed = doctorId * 31 + date.split("-").reduce((a, b) => a + parseInt(b), 0)
+  const shuffled = [...ALL_SLOTS].sort(() => Math.sin(seed * ALL_SLOTS.indexOf(ALL_SLOTS[0]) + 1) - 0.5)
+  const available = shuffled.slice(0, 10)
+  const booked = shuffled.slice(10, 13)
+  return { available, booked }
 }
 
 export default function AppointmentSlots() {
@@ -21,20 +29,36 @@ export default function AppointmentSlots() {
   const hospital = MOCK_HOSPITALS.find(h => h.id === hospitalId) || MOCK_HOSPITALS[0]
   const specialty = analysisResult?.results?.[0]?.specialty || "General Medicine"
 
-  const availableDoctors = doctors.filter(d =>
-    d.specialty === specialty &&
-    d.hospital?.toLowerCase().includes(hospital.name?.split(" ")[0]?.toLowerCase())
-  )
+  const availableDoctors = useMemo(() => {
+    const hospitalName = hospital.name?.toLowerCase()
+    return doctors.filter(d =>
+      d.specialty === specialty &&
+      d.hospital?.toLowerCase().includes(hospitalName?.split(" ")[0]) &&
+      (d.available === 1 || d.available === true)
+    )
+  }, [doctors, hospital, specialty])
 
   const displayDoctors = availableDoctors.length > 0
     ? availableDoctors
-    : doctors.filter(d => d.specialty === specialty).slice(0, 5)
+    : doctors.filter(d => d.specialty === specialty && (d.available === 1 || d.available === true)).slice(0, 5)
 
   const [selectedDate, setSelectedDate] = useState(DATES[0])
   const [selectedSlot, setSelectedSlot] = useState(null)
   const [selectedDoctor, setSelectedDoctor] = useState(null)
 
-  const takenSlots = bookedSlots[selectedDate] || []
+  const { available: availableSlots, booked: bookedSlots } = useMemo(() => {
+    if (!selectedDoctor) return { available: ALL_SLOTS.slice(0, 10), booked: [] }
+    return getDoctorSlots(selectedDoctor.id, selectedDate)
+  }, [selectedDoctor, selectedDate])
+
+  const formatDate = (dateStr) => {
+    const d = new Date(dateStr)
+    return {
+      day: d.toLocaleDateString("en-IN", { weekday: "short" }),
+      date: d.getDate(),
+      month: d.toLocaleDateString("en-IN", { month: "short" })
+    }
+  }
 
   const handleProceedToPayment = () => {
     if (!selectedSlot || !selectedDoctor) return
@@ -54,11 +78,6 @@ export default function AppointmentSlots() {
     navigate("/patient/payment", { state: { appointmentData } })
   }
 
-  const formatDate = (dateStr) => {
-    const d = new Date(dateStr)
-    return { day: d.toLocaleDateString("en-IN", { weekday: "short" }), date: d.getDate(), month: d.toLocaleDateString("en-IN", { month: "short" }) }
-  }
-
   return (
     <div className="page-wrapper">
       <div className="bg-blob" style={{ width: 400, height: 400, background: "radial-gradient(circle, rgba(0,201,167,0.07) 0%, transparent 70%)", top: 0, right: 0 }} />
@@ -70,12 +89,8 @@ export default function AppointmentSlots() {
         </button>
 
         <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.8rem", marginBottom: 6 }}>
-            Book Appointment
-          </h1>
-          <p style={{ color: "var(--teal)", fontWeight: 600, fontSize: "0.9rem" }}>
-            🏥 {hospital.name}
-          </p>
+          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.8rem", marginBottom: 6 }}>Book Appointment</h1>
+          <p style={{ color: "var(--teal)", fontWeight: 600, fontSize: "0.9rem" }}>🏥 {hospital.name}</p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24 }}>
@@ -91,7 +106,7 @@ export default function AppointmentSlots() {
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {displayDoctors.map(doc => (
-                    <div key={doc.id} onClick={() => setSelectedDoctor(doc)} style={{
+                    <div key={doc.id} onClick={() => { setSelectedDoctor(doc); setSelectedSlot(null) }} style={{
                       padding: "16px", borderRadius: 10, border: "1px solid",
                       borderColor: selectedDoctor?.id === doc.id ? "var(--teal)" : "var(--border)",
                       background: selectedDoctor?.id === doc.id ? "rgba(0,201,167,0.08)" : "rgba(255,255,255,0.02)",
@@ -103,14 +118,14 @@ export default function AppointmentSlots() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: "0.9rem", marginBottom: 2 }}>{doc.name}</div>
-                        <div style={{ color: "var(--text-secondary)", fontSize: "0.78rem", marginBottom: 2 }}>{doc.qualification} · {doc.specialty}</div>
+                        <div style={{ color: "var(--text-secondary)", fontSize: "0.78rem", marginBottom: 2 }}>{doc.qualification} · {doc.specialty} · {doc.experience} yrs exp</div>
                         <div style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>🏥 {doc.hospital}</div>
                         {doc.languages && <div style={{ color: "var(--text-dim)", fontSize: "0.72rem", marginTop: 2 }}>🗣️ {doc.languages}</div>}
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
                         <div style={{ color: "var(--amber)", fontSize: "0.82rem" }}>⭐ {doc.rating || "New"}</div>
-                        <div style={{ color: "var(--teal)", fontWeight: 700, fontSize: "0.9rem" }}>₹{doc.fee}</div>
-                        {selectedDoctor?.id === doc.id && <div style={{ color: "var(--teal)", fontSize: "0.72rem", fontWeight: 700 }}>✓ Selected</div>}
+                        <div style={{ color: "var(--teal)", fontWeight: 700, fontSize: "0.95rem" }}>₹{doc.fee}</div>
+                        {selectedDoctor?.id === doc.id && <div style={{ color: "var(--teal)", fontSize: "0.7rem", fontWeight: 700 }}>✓ Selected</div>}
                       </div>
                     </div>
                   ))}
@@ -146,27 +161,31 @@ export default function AppointmentSlots() {
             {/* Select Slot */}
             <div className="glass-card" style={{ padding: "24px" }}>
               <h3 style={{ fontSize: "0.85rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-secondary)", marginBottom: 16 }}>
-                Available Time Slots
+                Available Time Slots {selectedDoctor ? `— ${selectedDoctor.name}` : ""}
               </h3>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                {MOCK_SLOTS.map(slot => {
-                  const booked = takenSlots.includes(slot)
-                  const selected = selectedSlot === slot
-                  return (
-                    <button key={slot} onClick={() => !booked && setSelectedSlot(slot)} disabled={booked} style={{
-                      padding: "8px 16px", borderRadius: 8, border: "1px solid",
-                      borderColor: selected ? "var(--teal)" : booked ? "var(--border)" : "var(--border)",
-                      background: selected ? "rgba(0,201,167,0.15)" : booked ? "rgba(255,255,255,0.02)" : "transparent",
-                      color: selected ? "var(--teal)" : booked ? "var(--text-dim)" : "var(--text-secondary)",
-                      cursor: booked ? "not-allowed" : "pointer",
-                      fontFamily: "inherit", fontSize: "0.82rem", transition: "all 0.2s",
-                      textDecoration: booked ? "line-through" : "none",
-                    }}>
-                      {slot} {booked && <span style={{ fontSize: "0.65rem" }}>Booked</span>}
-                    </button>
-                  )
-                })}
-              </div>
+              {!selectedDoctor ? (
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Select a doctor first to see available slots.</p>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                  {ALL_SLOTS.map(slot => {
+                    const booked = bookedSlots.includes(slot)
+                    const selected = selectedSlot === slot
+                    return (
+                      <button key={slot} onClick={() => !booked && setSelectedSlot(slot)} disabled={booked} style={{
+                        padding: "8px 16px", borderRadius: 8, border: "1px solid",
+                        borderColor: selected ? "var(--teal)" : booked ? "var(--border)" : "var(--border)",
+                        background: selected ? "rgba(0,201,167,0.15)" : booked ? "rgba(255,255,255,0.02)" : "transparent",
+                        color: selected ? "var(--teal)" : booked ? "var(--text-dim)" : "var(--text-secondary)",
+                        cursor: booked ? "not-allowed" : "pointer",
+                        fontFamily: "inherit", fontSize: "0.82rem", transition: "all 0.2s",
+                        textDecoration: booked ? "line-through" : "none",
+                      }}>
+                        {slot} {booked && <span style={{ fontSize: "0.65rem" }}>Booked</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-﻿const BASE_URL = "http://localhost:5000/api"
+const BASE_URL = "http://localhost:5000/api"
 
 const getToken = () => localStorage.getItem("token")
 
@@ -39,6 +39,9 @@ export const getDoctorAppointments = () =>
 
 export const updateAppointmentStatus = (id, status) =>
   fetch(`${BASE_URL}/appointments/${id}/status`, { method: "PUT", headers: headers(), body: JSON.stringify({ status }) }).then(r => r.json())
+
+export const markAppointmentCompleted = (id) =>
+  fetch(`${BASE_URL}/appointments/${id}/complete`, { method: "PUT", headers: headers() }).then(r => r.json())
 
 export const rescheduleAppointment = (id, date, time) =>
   fetch(`${BASE_URL}/appointments/${id}/reschedule`, { method: "PUT", headers: headers(), body: JSON.stringify({ date, time }) }).then(r => r.json())

@@ -1,12 +1,11 @@
 ﻿import React, { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import Navbar from "../components/Navbar"
-import { useApp } from "../context/AppContext"
+import { bookAppointment, createPayment } from "../api/index"
 
 export default function Payment() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { addAppointment } = useApp()
   const appointmentData = location.state?.appointmentData
 
   const [paymentMethod, setPaymentMethod] = useState("upi")
@@ -28,7 +27,7 @@ export default function Payment() {
     { id: "other", name: "Other UPI", icon: "📱" },
   ]
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!agreed) { setError("Please agree to the cancellation policy."); return }
     if (paymentMethod === "upi" && !selectedUpiApp) { setError("Please select a UPI app."); return }
     if (paymentMethod === "upi" && selectedUpiApp === "other" && !upiId.trim()) { setError("Please enter your UPI ID."); return }
@@ -40,11 +39,34 @@ export default function Payment() {
     }
     setError("")
     setPaying(true)
-    setTimeout(() => {
-      if (appointmentData) addAppointment(appointmentData)
-      setPaying(false)
+    try {
+      // 1. Book appointment in DB
+      const aptRes = await bookAppointment({
+        doctor_id: appointmentData.doctorId,
+        patient_name: appointmentData.patientName,
+        doctor_name: appointmentData.doctorName,
+        hospital_name: appointmentData.hospitalName,
+        specialty: appointmentData.specialty,
+        disease: appointmentData.disease,
+        symptoms: appointmentData.symptoms || [],
+        description: appointmentData.description || "",
+        date: appointmentData.date,
+        time: appointmentData.time,
+      })
+
+      // 2. Record payment in DB
+      await createPayment({
+        reference_type: "appointment",
+        amount: 250,
+        method: paymentMethod === "upi" ? selectedUpiApp : "card",
+      })
+
       setPaid(true)
-    }, 2500)
+    } catch (err) {
+      setError("Payment failed. Please try again.")
+      console.error(err)
+    }
+    setPaying(false)
   }
 
   if (!appointmentData) {
@@ -75,10 +97,10 @@ export default function Payment() {
             ))}
           </div>
           <div style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: "0.78rem", color: "var(--coral)", marginBottom: 24 }}>
-            ⚠️ Reminder: ₹250 token is non-refundable even if you cancel.
+            Reminder: Rs.250 token is non-refundable even if you cancel.
           </div>
           <button className="btn-primary" onClick={() => navigate("/patient/dashboard")} style={{ width: "100%", padding: "14px" }}>
-            Go to Dashboard →
+            Go to Dashboard
           </button>
         </div>
       </div>
@@ -91,21 +113,19 @@ export default function Payment() {
       <Navbar />
       <div style={{ maxWidth: 520, margin: "0 auto", padding: "40px 24px", position: "relative", zIndex: 1 }}>
         <button onClick={() => navigate(-1)} style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "0.85rem", marginBottom: 32, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
-          ← Back
+          Back
         </button>
 
-        {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 28, animation: "fadeInUp 0.5s ease forwards" }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>💳</div>
           <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.8rem", marginBottom: 6 }}>Pay Token Amount</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem" }}>Complete payment to confirm your appointment</p>
         </div>
 
-        {/* Amount card */}
         <div style={{ background: "linear-gradient(135deg, rgba(0,201,167,0.15), rgba(0,201,167,0.05))", border: "1px solid rgba(0,201,167,0.3)", borderRadius: 16, padding: "20px 24px", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginBottom: 4 }}>Token Amount</div>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "2.5rem", color: "var(--teal)" }}>₹250</div>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "2.5rem", color: "var(--teal)" }}>Rs.250</div>
             <div style={{ color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: 4 }}>Adjusted in final bill if you attend</div>
           </div>
           <div style={{ textAlign: "right", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
@@ -115,19 +135,16 @@ export default function Payment() {
           </div>
         </div>
 
-        {/* Non-refundable warning */}
         <div style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.25)", borderRadius: 10, padding: "12px 16px", marginBottom: 24, fontSize: "0.8rem", color: "var(--coral)", lineHeight: 1.6 }}>
-          ⚠️ <strong>Non-Refundable Policy:</strong> This ₹250 token is strictly non-refundable. It will NOT be refunded if you cancel or miss your appointment.
+          Non-Refundable Policy: This Rs.250 token is strictly non-refundable. It will NOT be refunded if you cancel or miss your appointment.
         </div>
 
-        {/* Payment method tabs */}
         <div className="glass-card" style={{ padding: "24px", marginBottom: 16 }}>
           <div className="tabs" style={{ marginBottom: 24 }}>
             <button className={`tab ${paymentMethod === "upi" ? "active" : ""}`} onClick={() => setPaymentMethod("upi")}>UPI</button>
             <button className={`tab ${paymentMethod === "card" ? "active" : ""}`} onClick={() => setPaymentMethod("card")}>Card</button>
           </div>
 
-          {/* UPI */}
           {paymentMethod === "upi" && (
             <div style={{ animation: "fadeIn 0.3s ease forwards" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
@@ -155,20 +172,11 @@ export default function Payment() {
             </div>
           )}
 
-          {/* Card */}
           {paymentMethod === "card" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 14, animation: "fadeIn 0.3s ease forwards" }}>
               <div className="form-group">
                 <label>Card Number</label>
-                <input
-                  value={cardNumber}
-                  onChange={e => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 16)
-                    setCardNumber(val.replace(/(.{4})/g, "$1 ").trim())
-                  }}
-                  placeholder="1234 5678 9012 3456"
-                  style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.1em" }}
-                />
+                <input value={cardNumber} onChange={e => { const val = e.target.value.replace(/\D/g, "").slice(0, 16); setCardNumber(val.replace(/(.{4})/g, "$1 ").trim()) }} placeholder="1234 5678 9012 3456" style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.1em" }} />
               </div>
               <div className="form-group">
                 <label>Cardholder Name</label>
@@ -181,31 +189,25 @@ export default function Payment() {
                 </div>
                 <div className="form-group">
                   <label>CVV</label>
-                  <input value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 3))} placeholder="•••" maxLength={3} type="password" />
+                  <input value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 3))} placeholder="..." maxLength={3} type="password" />
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Agree checkbox */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 20, cursor: "pointer" }} onClick={() => setAgreed(!agreed)}>
-          <div style={{
-            width: 20, height: 20, borderRadius: 5, border: `2px solid ${agreed ? "var(--teal)" : "var(--border)"}`,
-            background: agreed ? "var(--teal)" : "transparent", flexShrink: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "all 0.2s", marginTop: 2,
-          }}>
+          <div style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${agreed ? "var(--teal)" : "var(--border)"}`, background: agreed ? "var(--teal)" : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", marginTop: 2 }}>
             {agreed && <span style={{ color: "var(--navy)", fontSize: "0.75rem", fontWeight: 700 }}>✓</span>}
           </div>
           <span style={{ fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-            I understand that the ₹250 token amount is <strong style={{ color: "var(--coral)" }}>strictly non-refundable</strong> under any circumstances including cancellation or no-show.
+            I understand that the Rs.250 token amount is <strong style={{ color: "var(--coral)" }}>strictly non-refundable</strong> under any circumstances.
           </span>
         </div>
 
         {error && (
           <div style={{ background: "rgba(255,107,107,0.1)", border: "1px solid rgba(255,107,107,0.3)", borderRadius: 8, padding: "10px 14px", fontSize: "0.82rem", color: "var(--coral)", marginBottom: 16 }}>
-            ⚠️ {error}
+            {error}
           </div>
         )}
 
@@ -215,11 +217,10 @@ export default function Payment() {
               <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
               Processing Payment...
             </span>
-          ) : "Pay ₹250 & Confirm Appointment →"}
+          ) : "Pay Rs.250 & Confirm Appointment"}
         </button>
-
         <p style={{ textAlign: "center", color: "var(--text-dim)", fontSize: "0.75rem", marginTop: 14 }}>
-          🔒 Secured payment · Later powered by Razorpay
+          Secured payment · Later powered by Razorpay
         </p>
       </div>
     </div>

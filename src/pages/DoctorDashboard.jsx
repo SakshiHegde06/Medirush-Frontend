@@ -2,7 +2,7 @@
 import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import { useApp } from "../context/AppContext"
-import { getDoctorAppointments, updateAppointmentStatus } from "../api/index"
+import { getDoctorAppointments, updateAppointmentStatus, markAppointmentCompleted } from "../api/index"
 
 export default function DoctorDashboard() {
   const { currentUser, logout } = useApp()
@@ -12,18 +12,14 @@ export default function DoctorDashboard() {
   const [toast, setToast] = useState(null)
   const [filter, setFilter] = useState("all")
 
-  useEffect(() => {
-    fetchAppointments()
-  }, [])
+  useEffect(() => { fetchAppointments() }, [])
 
   const fetchAppointments = async () => {
     setLoading(true)
     try {
       const data = await getDoctorAppointments()
       if (Array.isArray(data)) setAppointments(data)
-    } catch (err) {
-      console.error(err)
-    }
+    } catch (err) { console.error(err) }
     setLoading(false)
   }
 
@@ -35,12 +31,23 @@ export default function DoctorDashboard() {
   const handleStatus = async (id, status) => {
     await updateAppointmentStatus(id, status)
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a))
-    showToast(status === "accepted" ? "✅ Appointment accepted!" : "❌ Appointment declined")
+    showToast(status === "accepted" ? "✅ Appointment accepted!" : "❌ Appointment declined", status === "accepted" ? "success" : "danger")
+  }
+
+  const handleComplete = async (id) => {
+    const res = await markAppointmentCompleted(id)
+    if (res.message) {
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: "completed" } : a))
+      showToast("✅ Appointment completed! Consultation count updated.")
+    }
   }
 
   const filtered = filter === "all" ? appointments : appointments.filter(a => a.status === filter)
 
-  const statusColor = { pending: "var(--amber)", accepted: "var(--teal)", rejected: "var(--coral)", completed: "#a78bfa", cancelled: "var(--text-dim)" }
+  const statusColor = {
+    pending: "var(--amber)", accepted: "var(--teal)",
+    rejected: "var(--coral)", completed: "#a78bfa", cancelled: "var(--text-dim)"
+  }
 
   return (
     <div className="page-wrapper">
@@ -57,13 +64,9 @@ export default function DoctorDashboard() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 36, flexWrap: "wrap", gap: 16 }}>
           <div>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: 4 }}>Welcome back</p>
-            <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "2rem" }}>
-              {currentUser?.name || "Doctor"} 🩺
-            </h1>
+            <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "2rem" }}>{currentUser?.name || "Doctor"} 🩺</h1>
           </div>
-          <button onClick={() => { logout(); navigate("/") }} className="btn-secondary" style={{ padding: "8px 20px", fontSize: "0.85rem" }}>
-            Logout
-          </button>
+          <button onClick={() => { logout(); navigate("/") }} className="btn-secondary" style={{ padding: "8px 20px", fontSize: "0.85rem" }}>Logout</button>
         </div>
 
         {/* Stats */}
@@ -83,13 +86,13 @@ export default function DoctorDashboard() {
 
         {/* Filter */}
         <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
-          {["all", "pending", "accepted", "rejected", "completed"].map(f => (
+          {["all", "pending", "accepted", "completed", "rejected"].map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{
               padding: "6px 16px", borderRadius: 100, border: "1px solid",
               borderColor: filter === f ? "var(--teal)" : "var(--border)",
               background: filter === f ? "rgba(0,201,167,0.15)" : "transparent",
               color: filter === f ? "var(--teal)" : "var(--text-secondary)",
-              cursor: "pointer", fontFamily: "inherit", fontSize: "0.8rem", fontWeight: 500,
+              cursor: "pointer", fontFamily: "inherit", fontSize: "0.8rem",
               textTransform: "capitalize", transition: "all 0.2s",
             }}>{f}</button>
           ))}
@@ -114,37 +117,60 @@ export default function DoctorDashboard() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
                       <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>{apt.patient_name}</h3>
-                      <span style={{ padding: "3px 10px", borderRadius: 100, fontSize: "0.72rem", fontWeight: 700, background: `${statusColor[apt.status]}20`, color: statusColor[apt.status], border: `1px solid ${statusColor[apt.status]}40`, textTransform: "capitalize" }}>
+                      <span style={{
+                        padding: "3px 10px", borderRadius: 100, fontSize: "0.72rem", fontWeight: 700,
+                        background: `${statusColor[apt.status]}20`, color: statusColor[apt.status],
+                        border: `1px solid ${statusColor[apt.status]}40`, textTransform: "capitalize"
+                      }}>
                         {apt.status}
                       </span>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginBottom: 10 }}>
-                      {[
-                        ["🏥", apt.hospital_name],
-                        ["🔬", apt.specialty],
-                        ["📅", apt.date],
-                        ["⏰", apt.time],
-                        ["🩺", apt.disease],
-                      ].map(([icon, val]) => val && (
-                        <div key={icon} style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-                          {icon} {val}
-                        </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginBottom: 8 }}>
+                      {[["🏥", apt.hospital_name], ["🔬", apt.specialty], ["📅", apt.date], ["⏰", apt.time], ["🩺", apt.disease]].map(([icon, val]) => val && (
+                        <div key={icon} style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{icon} {val}</div>
                       ))}
                     </div>
                     {apt.description && (
                       <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", fontStyle: "italic" }}>"{apt.description}"</p>
                     )}
                   </div>
-                  {apt.status === "pending" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
-                      <button className="btn-primary" onClick={() => handleStatus(apt.id, "accepted")} style={{ padding: "8px 20px", fontSize: "0.82rem" }}>
-                        ✅ Accept
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, justifyContent: "center" }}>
+                    {apt.status === "pending" && (
+                      <>
+                        <button className="btn-primary" onClick={() => handleStatus(apt.id, "accepted")}
+                          style={{ padding: "8px 20px", fontSize: "0.82rem" }}>
+                          ✅ Accept
+                        </button>
+                        <button className="btn-danger" onClick={() => handleStatus(apt.id, "rejected")}
+                          style={{ padding: "8px 20px", fontSize: "0.82rem" }}>
+                          ❌ Decline
+                        </button>
+                      </>
+                    )}
+                    {apt.status === "accepted" && (
+                      <button onClick={() => handleComplete(apt.id)} style={{
+                        padding: "10px 20px", fontSize: "0.85rem", borderRadius: 8,
+                        border: "1px solid rgba(167,139,250,0.4)",
+                        background: "rgba(167,139,250,0.15)",
+                        color: "#a78bfa", cursor: "pointer", fontFamily: "inherit",
+                        fontWeight: 700, transition: "all 0.2s",
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(167,139,250,0.25)" }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "rgba(167,139,250,0.15)" }}
+                      >
+                        ✓ Mark as Completed
                       </button>
-                      <button className="btn-danger" onClick={() => handleStatus(apt.id, "rejected")} style={{ padding: "8px 20px", fontSize: "0.82rem" }}>
-                        ❌ Decline
-                      </button>
-                    </div>
-                  )}
+                    )}
+                    {apt.status === "completed" && (
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "1.2rem", marginBottom: 4 }}>✅</div>
+                        <span style={{ fontSize: "0.78rem", color: "#a78bfa", fontWeight: 600 }}>Completed</span>
+                      </div>
+                    )}
+                    {apt.status === "rejected" && (
+                      <span style={{ fontSize: "0.78rem", color: "var(--coral)", fontWeight: 600 }}>Declined</span>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
