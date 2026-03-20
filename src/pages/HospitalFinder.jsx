@@ -113,7 +113,6 @@ export default function HospitalFinder() {
           </p>
         </div>
 
-        {/* City selector */}
         <div className="glass-card" style={{ padding: "28px", marginBottom: 32, border: "1px solid rgba(0,201,167,0.2)" }}>
           <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 6 }}>Select Your City</h3>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: 16 }}>We will show hospitals in your city that specialize in your condition.</p>
@@ -137,7 +136,6 @@ export default function HospitalFinder() {
           </button>
         </div>
 
-        {/* Results */}
         {searched && (
           <div>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginBottom: 20 }}>
@@ -174,7 +172,8 @@ export default function HospitalFinder() {
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center" }}>
-                      <button className="btn-primary" onClick={() => navigate(`/patient/slots/${h.id}`)}
+                      <button className="btn-primary"
+                        onClick={() => navigate(`/patient/slots/${h.id}`, { state: { city: selectedCity, hospitalName: h.name } })}
                         style={{ padding: "8px 20px", fontSize: "0.82rem" }}>
                         Book Slot →
                       </button>

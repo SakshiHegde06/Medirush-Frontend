@@ -2,6 +2,7 @@
 import { useNavigate, useLocation } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import { bookAppointment, createPayment } from "../api/index"
+import { generateAppointmentPDF, generateBookingId } from "../utils/pdfGenerator"
 
 export default function Payment() {
   const navigate = useNavigate()
@@ -19,6 +20,8 @@ export default function Payment() {
   const [paid, setPaid] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState("")
+  const [bookingId, setBookingId] = useState("")
+  const [generatingPdf, setGeneratingPdf] = useState(false)
 
   const upiApps = [
     { id: "phonepe", name: "PhonePe", icon: "💜" },
@@ -40,8 +43,10 @@ export default function Payment() {
     setError("")
     setPaying(true)
     try {
-      // 1. Book appointment in DB
-      const aptRes = await bookAppointment({
+      const newBookingId = generateBookingId()
+      setBookingId(newBookingId)
+
+      await bookAppointment({
         doctor_id: appointmentData.doctorId,
         patient_name: appointmentData.patientName,
         doctor_name: appointmentData.doctorName,
@@ -54,7 +59,6 @@ export default function Payment() {
         time: appointmentData.time,
       })
 
-      // 2. Record payment in DB
       await createPayment({
         reference_type: "appointment",
         amount: 250,
@@ -69,6 +73,28 @@ export default function Payment() {
     setPaying(false)
   }
 
+  const handleDownloadPDF = async () => {
+    setGeneratingPdf(true)
+    try {
+      await generateAppointmentPDF({
+        bookingId,
+        patientName: appointmentData.patientName,
+        patientPhone: appointmentData.patientPhone || "N/A",
+        doctorName: appointmentData.doctorName,
+        specialty: appointmentData.specialty,
+        hospitalName: appointmentData.hospitalName,
+        city: appointmentData.city || "Bangalore",
+        date: appointmentData.date,
+        time: appointmentData.time,
+        paymentStatus: "Paid",
+        amount: 250,
+      })
+    } catch (err) {
+      console.error("PDF generation failed:", err)
+    }
+    setGeneratingPdf(false)
+  }
+
   if (!appointmentData) {
     navigate("/patient/dashboard")
     return null
@@ -78,17 +104,24 @@ export default function Payment() {
     <div className="page-wrapper">
       <Navbar />
       <div style={{ minHeight: "calc(100vh - 73px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, position: "relative", zIndex: 1 }}>
-        <div className="glass-card" style={{ maxWidth: 480, width: "100%", padding: 48, textAlign: "center", border: "1px solid rgba(0,201,167,0.3)", animation: "fadeInUp 0.5s ease forwards" }}>
+        <div className="glass-card" style={{ maxWidth: 500, width: "100%", padding: 48, textAlign: "center", border: "1px solid rgba(0,201,167,0.3)", animation: "fadeInUp 0.5s ease forwards" }}>
           <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(0,201,167,0.15)", border: "2px solid var(--teal)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, margin: "0 auto 24px" }}>✅</div>
           <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.8rem", marginBottom: 8 }}>Payment Successful!</h2>
-          <p style={{ color: "var(--text-secondary)", marginBottom: 6 }}>₹250 token amount paid</p>
-          <div style={{ background: "rgba(0,201,167,0.08)", border: "1px solid rgba(0,201,167,0.2)", borderRadius: 10, padding: "16px", margin: "20px 0", textAlign: "left" }}>
+          <p style={{ color: "var(--text-secondary)", marginBottom: 6 }}>Rs.250 token amount paid</p>
+
+          {/* Booking ID */}
+          <div style={{ background: "rgba(0,201,167,0.08)", border: "1px solid rgba(0,201,167,0.2)", borderRadius: 10, padding: "12px 16px", margin: "16px 0" }}>
+            <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: 4 }}>BOOKING ID</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "1rem", color: "var(--teal)", fontWeight: 700, letterSpacing: 2 }}>{bookingId}</div>
+          </div>
+
+          <div style={{ background: "rgba(0,201,167,0.05)", border: "1px solid rgba(0,201,167,0.15)", borderRadius: 10, padding: "16px", margin: "16px 0", textAlign: "left" }}>
             {[
               ["Doctor", appointmentData.doctorName],
               ["Hospital", appointmentData.hospitalName],
               ["Date", appointmentData.date],
               ["Time", appointmentData.time],
-              ["Token Paid", "₹250"],
+              ["Token Paid", "Rs.250"],
             ].map(([label, val]) => (
               <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: "0.85rem" }}>
                 <span style={{ color: "var(--text-secondary)" }}>{label}</span>
@@ -96,9 +129,20 @@ export default function Payment() {
               </div>
             ))}
           </div>
+
           <div style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 8, padding: "10px 14px", fontSize: "0.78rem", color: "var(--coral)", marginBottom: 24 }}>
-            Reminder: Rs.250 token is non-refundable even if you cancel.
+            Rs.250 token is non-refundable even if you cancel.
           </div>
+
+          {/* Download PDF button */}
+          <button onClick={handleDownloadPDF} disabled={generatingPdf}
+            style={{ width: "100%", padding: "14px", marginBottom: 12, borderRadius: 8, border: "1px solid var(--teal)", background: "rgba(0,201,167,0.1)", color: "var(--teal)", cursor: "pointer", fontFamily: "inherit", fontSize: "0.95rem", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.2s" }}>
+            {generatingPdf
+              ? <><span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Generating PDF...</>
+              : "📄 Download Appointment PDF"
+            }
+          </button>
+
           <button className="btn-primary" onClick={() => navigate("/patient/dashboard")} style={{ width: "100%", padding: "14px" }}>
             Go to Dashboard
           </button>
@@ -136,7 +180,7 @@ export default function Payment() {
         </div>
 
         <div style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.25)", borderRadius: 10, padding: "12px 16px", marginBottom: 24, fontSize: "0.8rem", color: "var(--coral)", lineHeight: 1.6 }}>
-          Non-Refundable Policy: This Rs.250 token is strictly non-refundable. It will NOT be refunded if you cancel or miss your appointment.
+          Non-Refundable Policy: This Rs.250 token is strictly non-refundable under any circumstances.
         </div>
 
         <div className="glass-card" style={{ padding: "24px", marginBottom: 16 }}>
