@@ -4,6 +4,14 @@ import Navbar from "../components/Navbar"
 import { useApp } from "../context/AppContext"
 import { getDoctorAppointments, updateAppointmentStatus, markAppointmentCompleted } from "../api/index"
 
+const ALL_SLOTS = [
+  "8:00 AM","8:30 AM","9:00 AM","9:30 AM","10:00 AM","10:30 AM",
+  "11:00 AM","11:30 AM","12:00 PM","2:00 PM","2:30 PM","3:00 PM",
+  "3:30 PM","4:00 PM","4:30 PM","5:00 PM","5:30 PM"
+]
+
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+
 export default function DoctorDashboard() {
   const { currentUser, logout } = useApp()
   const navigate = useNavigate()
@@ -11,6 +19,21 @@ export default function DoctorDashboard() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [filter, setFilter] = useState("all")
+  const [activeTab, setActiveTab] = useState("appointments")
+  const [availableSlots, setAvailableSlots] = useState(() => {
+    const saved = localStorage.getItem("doctorSlots")
+    return saved ? JSON.parse(saved) : {
+      Monday: ["9:00 AM","9:30 AM","10:00 AM","10:30 AM","11:00 AM","2:00 PM","2:30 PM","3:00 PM"],
+      Tuesday: ["9:00 AM","9:30 AM","10:00 AM","10:30 AM","11:00 AM","2:00 PM","2:30 PM","3:00 PM"],
+      Wednesday: ["9:00 AM","9:30 AM","10:00 AM","2:00 PM","2:30 PM"],
+      Thursday: ["9:00 AM","9:30 AM","10:00 AM","10:30 AM","11:00 AM","2:00 PM","2:30 PM","3:00 PM"],
+      Friday: ["9:00 AM","9:30 AM","10:00 AM","10:30 AM","2:00 PM","2:30 PM"],
+      Saturday: ["9:00 AM","9:30 AM","10:00 AM"],
+      Sunday: [],
+    }
+  })
+  const [selectedDay, setSelectedDay] = useState("Monday")
+  const [slotsSaved, setSlotsSaved] = useState(false)
 
   useEffect(() => { fetchAppointments() }, [])
 
@@ -38,8 +61,26 @@ export default function DoctorDashboard() {
     const res = await markAppointmentCompleted(id)
     if (res.message) {
       setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: "completed" } : a))
-      showToast("✅ Appointment completed! Consultation count updated.")
+      showToast("✅ Appointment completed!")
     }
+  }
+
+  const toggleSlot = (slot) => {
+    setAvailableSlots(prev => {
+      const current = prev[selectedDay] || []
+      const updated = current.includes(slot)
+        ? current.filter(s => s !== slot)
+        : [...current, slot].sort((a, b) => ALL_SLOTS.indexOf(a) - ALL_SLOTS.indexOf(b))
+      return { ...prev, [selectedDay]: updated }
+    })
+    setSlotsSaved(false)
+  }
+
+  const saveSlots = () => {
+    localStorage.setItem("doctorSlots", JSON.stringify(availableSlots))
+    setSlotsSaved(true)
+    showToast("✅ Availability saved successfully!")
+    setTimeout(() => setSlotsSaved(false), 3000)
   }
 
   const filtered = filter === "all" ? appointments : appointments.filter(a => a.status === filter)
@@ -48,6 +89,11 @@ export default function DoctorDashboard() {
     pending: "var(--amber)", accepted: "var(--teal)",
     rejected: "var(--coral)", completed: "#a78bfa", cancelled: "var(--text-dim)"
   }
+
+  const todayAppointments = appointments.filter(a => {
+    const today = new Date().toISOString().split("T")[0]
+    return a.date === today && (a.status === "accepted" || a.status === "pending")
+  })
 
   return (
     <div className="page-wrapper">
@@ -84,96 +130,188 @@ export default function DoctorDashboard() {
           ))}
         </div>
 
-        {/* Filter */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
-          {["all", "pending", "accepted", "completed", "rejected"].map(f => (
-            <button key={f} onClick={() => setFilter(f)} style={{
-              padding: "6px 16px", borderRadius: 100, border: "1px solid",
-              borderColor: filter === f ? "var(--teal)" : "var(--border)",
-              background: filter === f ? "rgba(0,201,167,0.15)" : "transparent",
-              color: filter === f ? "var(--teal)" : "var(--text-secondary)",
-              cursor: "pointer", fontFamily: "inherit", fontSize: "0.8rem",
-              textTransform: "capitalize", transition: "all 0.2s",
-            }}>{f}</button>
+        {/* Today's schedule */}
+        {todayAppointments.length > 0 && (
+          <div style={{ background: "rgba(0,201,167,0.06)", border: "1px solid rgba(0,201,167,0.2)", borderRadius: 12, padding: "16px 20px", marginBottom: 24 }}>
+            <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--teal)", marginBottom: 12 }}>📅 Today's Schedule ({todayAppointments.length} patients)</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {todayAppointments.map(apt => (
+                <div key={apt.id} style={{ background: "rgba(0,201,167,0.1)", border: "1px solid rgba(0,201,167,0.2)", borderRadius: 8, padding: "8px 14px", fontSize: "0.82rem" }}>
+                  <span style={{ fontWeight: 600 }}>{apt.time}</span> · {apt.patient_name}
+                  <span style={{ marginLeft: 8, padding: "2px 6px", borderRadius: 4, background: apt.status === "accepted" ? "rgba(0,201,167,0.2)" : "rgba(255,217,61,0.2)", color: apt.status === "accepted" ? "var(--teal)" : "var(--amber)", fontSize: "0.72rem" }}>{apt.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 4, marginBottom: 24, width: "fit-content" }}>
+          {[
+            { key: "appointments", label: "📅 Appointments" },
+            { key: "slots", label: "🕐 Manage Availability" },
+          ].map(t => (
+            <button key={t.key} onClick={() => setActiveTab(t.key)} style={{
+              padding: "8px 20px", borderRadius: 7, border: "none", fontFamily: "inherit",
+              background: activeTab === t.key ? "#a78bfa" : "transparent",
+              color: activeTab === t.key ? "white" : "var(--text-secondary)",
+              cursor: "pointer", fontSize: "0.85rem", fontWeight: activeTab === t.key ? 700 : 500,
+              transition: "all 0.2s",
+            }}>
+              {t.label}
+            </button>
           ))}
         </div>
 
-        {/* Appointments */}
-        {loading ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-secondary)" }}>
-            <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
-            Loading appointments...
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="glass-card" style={{ padding: 48, textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📅</div>
-            <p style={{ color: "var(--text-secondary)" }}>No {filter !== "all" ? filter : ""} appointments yet.</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {filtered.map((apt, i) => (
-              <div key={apt.id} className="glass-card" style={{ padding: "22px 24px", border: "1px solid var(--border)", animation: `fadeInUp 0.4s ease ${i * 0.06}s both` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-                      <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>{apt.patient_name}</h3>
-                      <span style={{
-                        padding: "3px 10px", borderRadius: 100, fontSize: "0.72rem", fontWeight: 700,
-                        background: `${statusColor[apt.status]}20`, color: statusColor[apt.status],
-                        border: `1px solid ${statusColor[apt.status]}40`, textTransform: "capitalize"
-                      }}>
-                        {apt.status}
-                      </span>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginBottom: 8 }}>
-                      {[["🏥", apt.hospital_name], ["🔬", apt.specialty], ["📅", apt.date], ["⏰", apt.time], ["🩺", apt.disease]].map(([icon, val]) => val && (
-                        <div key={icon} style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{icon} {val}</div>
-                      ))}
-                    </div>
-                    {apt.description && (
-                      <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", fontStyle: "italic" }}>"{apt.description}"</p>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, justifyContent: "center" }}>
-                    {apt.status === "pending" && (
-                      <>
-                        <button className="btn-primary" onClick={() => handleStatus(apt.id, "accepted")}
-                          style={{ padding: "8px 20px", fontSize: "0.82rem" }}>
-                          ✅ Accept
-                        </button>
-                        <button className="btn-danger" onClick={() => handleStatus(apt.id, "rejected")}
-                          style={{ padding: "8px 20px", fontSize: "0.82rem" }}>
-                          ❌ Decline
-                        </button>
-                      </>
-                    )}
-                    {apt.status === "accepted" && (
-                      <button onClick={() => handleComplete(apt.id)} style={{
-                        padding: "10px 20px", fontSize: "0.85rem", borderRadius: 8,
-                        border: "1px solid rgba(167,139,250,0.4)",
-                        background: "rgba(167,139,250,0.15)",
-                        color: "#a78bfa", cursor: "pointer", fontFamily: "inherit",
-                        fontWeight: 700, transition: "all 0.2s",
-                      }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(167,139,250,0.25)" }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "rgba(167,139,250,0.15)" }}
-                      >
-                        ✓ Mark as Completed
-                      </button>
-                    )}
-                    {apt.status === "completed" && (
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: "1.2rem", marginBottom: 4 }}>✅</div>
-                        <span style={{ fontSize: "0.78rem", color: "#a78bfa", fontWeight: 600 }}>Completed</span>
+        {/* APPOINTMENTS TAB */}
+        {activeTab === "appointments" && (
+          <div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+              {["all", "pending", "accepted", "completed", "rejected"].map(f => (
+                <button key={f} onClick={() => setFilter(f)} style={{
+                  padding: "6px 16px", borderRadius: 100, border: "1px solid",
+                  borderColor: filter === f ? "var(--teal)" : "var(--border)",
+                  background: filter === f ? "rgba(0,201,167,0.15)" : "transparent",
+                  color: filter === f ? "var(--teal)" : "var(--text-secondary)",
+                  cursor: "pointer", fontFamily: "inherit", fontSize: "0.8rem",
+                  textTransform: "capitalize", transition: "all 0.2s",
+                }}>{f}</button>
+              ))}
+            </div>
+
+            {loading ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-secondary)" }}>
+                <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} /> Loading...
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="glass-card" style={{ padding: 48, textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📅</div>
+                <p style={{ color: "var(--text-secondary)" }}>No {filter !== "all" ? filter : ""} appointments yet.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {filtered.map((apt, i) => (
+                  <div key={apt.id} className="glass-card" style={{ padding: "22px 24px", border: "1px solid var(--border)", animation: `fadeInUp 0.4s ease ${i * 0.06}s both` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                          <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>{apt.patient_name}</h3>
+                          <span style={{ padding: "3px 10px", borderRadius: 100, fontSize: "0.72rem", fontWeight: 700, background: `${statusColor[apt.status]}20`, color: statusColor[apt.status], border: `1px solid ${statusColor[apt.status]}40`, textTransform: "capitalize" }}>
+                            {apt.status}
+                          </span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginBottom: 8 }}>
+                          {[["🏥", apt.hospital_name], ["🔬", apt.specialty], ["📅", apt.date], ["⏰", apt.time], ["🩺", apt.disease]].map(([icon, val]) => val && (
+                            <div key={icon} style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{icon} {val}</div>
+                          ))}
+                        </div>
                       </div>
-                    )}
-                    {apt.status === "rejected" && (
-                      <span style={{ fontSize: "0.78rem", color: "var(--coral)", fontWeight: 600 }}>Declined</span>
-                    )}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, justifyContent: "center" }}>
+                        {apt.status === "pending" && (
+                          <>
+                            <button className="btn-primary" onClick={() => handleStatus(apt.id, "accepted")} style={{ padding: "8px 20px", fontSize: "0.82rem" }}>✅ Accept</button>
+                            <button className="btn-danger" onClick={() => handleStatus(apt.id, "rejected")} style={{ padding: "8px 20px", fontSize: "0.82rem" }}>❌ Decline</button>
+                          </>
+                        )}
+                        {apt.status === "accepted" && (
+                          <button onClick={() => handleComplete(apt.id)} style={{ padding: "10px 20px", fontSize: "0.85rem", borderRadius: 8, border: "1px solid rgba(167,139,250,0.4)", background: "rgba(167,139,250,0.15)", color: "#a78bfa", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, transition: "all 0.2s" }}>
+                            ✓ Mark Complete
+                          </button>
+                        )}
+                        {apt.status === "completed" && <span style={{ fontSize: "0.78rem", color: "#a78bfa", fontWeight: 600 }}>✅ Completed</span>}
+                        {apt.status === "rejected" && <span style={{ fontSize: "0.78rem", color: "var(--coral)", fontWeight: 600 }}>❌ Declined</span>}
+                      </div>
+                    </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SLOTS TAB */}
+        {activeTab === "slots" && (
+          <div style={{ animation: "fadeIn 0.3s ease forwards" }}>
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.4rem", marginBottom: 6 }}>Manage Your Availability</h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Select which time slots you are available each day. Patients will only see your available slots.</p>
+            </div>
+
+            {/* Day selector */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+              {DAYS.map(day => (
+                <button key={day} onClick={() => setSelectedDay(day)} style={{
+                  padding: "8px 18px", borderRadius: 100, border: "1px solid",
+                  borderColor: selectedDay === day ? "#a78bfa" : "var(--border)",
+                  background: selectedDay === day ? "rgba(167,139,250,0.15)" : "transparent",
+                  color: selectedDay === day ? "#a78bfa" : "var(--text-secondary)",
+                  cursor: "pointer", fontFamily: "inherit", fontSize: "0.85rem", fontWeight: 500,
+                  transition: "all 0.2s",
+                }}>
+                  {day} {availableSlots[day]?.length > 0 ? `(${availableSlots[day].length})` : "(Off)"}
+                </button>
+              ))}
+            </div>
+
+            {/* Slots grid */}
+            <div className="glass-card" style={{ padding: "24px", marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h3 style={{ fontSize: "0.9rem", fontWeight: 700 }}>{selectedDay} Slots</h3>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setAvailableSlots(prev => ({ ...prev, [selectedDay]: [...ALL_SLOTS] }))} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--teal)", background: "rgba(0,201,167,0.1)", color: "var(--teal)", cursor: "pointer", fontFamily: "inherit", fontSize: "0.78rem" }}>
+                    Select All
+                  </button>
+                  <button onClick={() => setAvailableSlots(prev => ({ ...prev, [selectedDay]: [] }))} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontFamily: "inherit", fontSize: "0.78rem" }}>
+                    Clear All
+                  </button>
                 </div>
               </div>
-            ))}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                {ALL_SLOTS.map(slot => {
+                  const selected = availableSlots[selectedDay]?.includes(slot)
+                  return (
+                    <button key={slot} onClick={() => toggleSlot(slot)} style={{
+                      padding: "8px 16px", borderRadius: 8, border: "1px solid",
+                      borderColor: selected ? "#a78bfa" : "var(--border)",
+                      background: selected ? "rgba(167,139,250,0.15)" : "transparent",
+                      color: selected ? "#a78bfa" : "var(--text-secondary)",
+                      cursor: "pointer", fontFamily: "inherit", fontSize: "0.82rem",
+                      transition: "all 0.2s", fontWeight: selected ? 600 : 400,
+                    }}>
+                      {selected ? "✓ " : ""}{slot}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Weekly overview */}
+            <div className="glass-card" style={{ padding: "24px", marginBottom: 20 }}>
+              <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 16 }}>Weekly Overview</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {DAYS.map(day => (
+                  <div key={day} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 100, fontSize: "0.82rem", fontWeight: 600, color: selectedDay === day ? "#a78bfa" : "var(--text-secondary)" }}>{day}</div>
+                    {availableSlots[day]?.length === 0 ? (
+                      <span style={{ fontSize: "0.78rem", color: "var(--text-dim)", fontStyle: "italic" }}>Day off</span>
+                    ) : (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {availableSlots[day]?.map(slot => (
+                          <span key={slot} style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", color: "#a78bfa", fontSize: "0.72rem" }}>
+                            {slot}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button className="btn-primary" onClick={saveSlots}
+              style={{ padding: "12px 32px", fontSize: "0.95rem", background: "#a78bfa" }}>
+              {slotsSaved ? "✅ Saved!" : "Save Availability →"}
+            </button>
           </div>
         )}
       </div>

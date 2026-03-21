@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AppProvider, useApp } from "./context/AppContext"
 import { LangProvider } from "./context/LangContext"
+import { SocketProvider } from "./context/SocketContext"
 import "./styles/global.css"
 import Landing from "./pages/Landing"
 import PatientAuth from "./pages/PatientAuth"
@@ -52,9 +53,12 @@ function AppRoutes() {
 export default function App() {
   return (
     <LangProvider>
+      <SocketProvider>
       <AppProvider>
         <AppRoutes />
       </AppProvider>
+    </SocketProvider>
     </LangProvider>
   )
 }
+

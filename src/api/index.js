@@ -72,3 +72,12 @@ export const removeDoctor = (id) =>
 
 export const getAllPatients = () =>
   fetch(`${BASE_URL}/patients/all`, { headers: headers() }).then(r => r.json())
+
+export const saveConsultation = (data) =>
+  fetch(`${BASE_URL}/consultations`, { method: "POST", headers: headers(), body: JSON.stringify(data) }).then(r => r.json())
+
+export const getMyConsultations = () =>
+  fetch(`${BASE_URL}/consultations/my`, { headers: headers() }).then(r => r.json())
+
+export const getPatientStats = () =>
+  fetch(`${BASE_URL}/consultations/stats`, { headers: headers() }).then(r => r.json())
