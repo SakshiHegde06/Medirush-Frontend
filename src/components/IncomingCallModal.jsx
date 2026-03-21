@@ -1,10 +1,8 @@
 ﻿import React, { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { useSocket } from "../context/SocketContext"
 
 export default function IncomingCallModal() {
   const { incomingCall, acceptCall, rejectCall } = useSocket()
-  const navigate = useNavigate()
   const [ringing, setRinging] = useState(0)
 
   useEffect(() => {
@@ -19,7 +17,7 @@ export default function IncomingCallModal() {
 
   const handleAccept = () => {
     acceptCall({ patientId: incomingCall.patientId, roomId: incomingCall.roomId })
-    navigate(`/patient/consult/${incomingCall.doctorId}`)
+    // Doctor stays on dashboard — no navigation needed
   }
 
   const handleReject = () => {
@@ -30,7 +28,6 @@ export default function IncomingCallModal() {
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, backdropFilter: "blur(10px)" }}>
       <div style={{ background: "var(--navy-light)", border: "1px solid rgba(0,201,167,0.4)", borderRadius: 24, padding: 48, maxWidth: 380, width: "90%", textAlign: "center", animation: "fadeInUp 0.4s ease forwards" }}>
 
-        {/* Animated ring */}
         <div style={{ position: "relative", width: 120, height: 120, margin: "0 auto 24px" }}>
           <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid rgba(0,201,167,0.4)", animation: "pulse-ring 1.5s infinite", transform: "scale(1.3)" }} />
           <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid rgba(0,201,167,0.3)", animation: "pulse-ring 1.5s infinite 0.5s", transform: "scale(1.6)" }} />
@@ -77,6 +74,10 @@ export default function IncomingCallModal() {
         <p style={{ color: "var(--text-dim)", fontSize: "0.72rem", marginTop: 16 }}>
           📵 Decline &nbsp;&nbsp; 📞 Accept
         </p>
+
+        <div style={{ marginTop: 20, padding: "10px 16px", background: "rgba(0,201,167,0.08)", border: "1px solid rgba(0,201,167,0.2)", borderRadius: 8, fontSize: "0.78rem", color: "var(--teal)" }}>
+          💡 Accept to start the consultation session
+        </div>
       </div>
 
       <style>{`

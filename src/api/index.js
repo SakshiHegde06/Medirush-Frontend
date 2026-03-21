@@ -43,6 +43,9 @@ export const updateAppointmentStatus = (id, status) =>
 export const markAppointmentCompleted = (id) =>
   fetch(`${BASE_URL}/appointments/${id}/complete`, { method: "PUT", headers: headers() }).then(r => r.json())
 
+export const cancelAppointment = (id) =>
+  fetch(`${BASE_URL}/appointments/${id}/cancel`, { method: "PUT", headers: headers() }).then(r => r.json())
+
 export const rescheduleAppointment = (id, date, time) =>
   fetch(`${BASE_URL}/appointments/${id}/reschedule`, { method: "PUT", headers: headers(), body: JSON.stringify({ date, time }) }).then(r => r.json())
 
@@ -81,3 +84,18 @@ export const getMyConsultations = () =>
 
 export const getPatientStats = () =>
   fetch(`${BASE_URL}/consultations/stats`, { headers: headers() }).then(r => r.json())
+
+export const getDoctorConsultations = () =>
+  fetch(`${BASE_URL}/consultations/doctor`, { headers: headers() }).then(r => r.json())
+
+export const getAdminConsultations = () =>
+  fetch(`${BASE_URL}/admin/consultations`, { headers: headers() }).then(r => r.json())
+
+export const saveDoctorSlots = (slots) =>
+  fetch(`${BASE_URL}/slots/slots`, { method: "POST", headers: headers(), body: JSON.stringify({ slots }) }).then(r => r.json())
+
+export const fetchDoctorSlots = (doctorId) =>
+  fetch(`${BASE_URL}/slots/slots/${doctorId}`).then(r => r.json())
+
+export const getBookedSlots = (doctorId, date) =>
+  fetch(`${BASE_URL}/slots/booked/${doctorId}/${date}`).then(r => r.json())

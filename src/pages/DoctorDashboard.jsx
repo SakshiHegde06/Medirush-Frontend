@@ -2,8 +2,7 @@
 import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import { useApp } from "../context/AppContext"
-import { getDoctorAppointments, updateAppointmentStatus, markAppointmentCompleted } from "../api/index"
-
+import { getDoctorAppointments, updateAppointmentStatus, markAppointmentCompleted, getDoctorConsultations, saveDoctorSlots } from "../api/index"
 const ALL_SLOTS = [
   "8:00 AM","8:30 AM","9:00 AM","9:30 AM","10:00 AM","10:30 AM",
   "11:00 AM","11:30 AM","12:00 PM","2:00 PM","2:30 PM","3:00 PM",
@@ -16,6 +15,7 @@ export default function DoctorDashboard() {
   const { currentUser, logout } = useApp()
   const navigate = useNavigate()
   const [appointments, setAppointments] = useState([])
+  const [consultations, setConsultations] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [filter, setFilter] = useState("all")
@@ -35,7 +35,7 @@ export default function DoctorDashboard() {
   const [selectedDay, setSelectedDay] = useState("Monday")
   const [slotsSaved, setSlotsSaved] = useState(false)
 
-  useEffect(() => { fetchAppointments() }, [])
+  useEffect(() => { fetchAppointments(); fetchConsultations() }, [])
 
   const fetchAppointments = async () => {
     setLoading(true)
@@ -44,6 +44,13 @@ export default function DoctorDashboard() {
       if (Array.isArray(data)) setAppointments(data)
     } catch (err) { console.error(err) }
     setLoading(false)
+  }
+
+  const fetchConsultations = async () => {
+    try {
+      const data = await getDoctorConsultations()
+      if (Array.isArray(data)) setConsultations(data)
+    } catch (err) { console.error(err) }
   }
 
   const showToast = (msg, type = "success") => {
@@ -75,13 +82,17 @@ export default function DoctorDashboard() {
     })
     setSlotsSaved(false)
   }
-
-  const saveSlots = () => {
-    localStorage.setItem("doctorSlots", JSON.stringify(availableSlots))
-    setSlotsSaved(true)
-    showToast("✅ Availability saved successfully!")
-    setTimeout(() => setSlotsSaved(false), 3000)
+const saveSlots = async () => {
+  localStorage.setItem("doctorSlots", JSON.stringify(availableSlots))
+  try {
+    await saveDoctorSlots(availableSlots)
+    showToast("✅ Availability saved to database!")
+  } catch (err) {
+    showToast("⚠️ Saved locally only", "danger")
   }
+  setSlotsSaved(true)
+  setTimeout(() => setSlotsSaved(false), 3000)
+}
 
   const filtered = filter === "all" ? appointments : appointments.filter(a => a.status === filter)
 
@@ -89,6 +100,9 @@ export default function DoctorDashboard() {
     pending: "var(--amber)", accepted: "var(--teal)",
     rejected: "var(--coral)", completed: "#a78bfa", cancelled: "var(--text-dim)"
   }
+
+  const modeIcon = { Video: "🎥", Audio: "🎤", Chat: "💬" }
+  const modeColor = { Video: "#00c9a7", Audio: "#a78bfa", Chat: "#ffd93d" }
 
   const todayAppointments = appointments.filter(a => {
     const today = new Date().toISOString().split("T")[0]
@@ -116,16 +130,17 @@ export default function DoctorDashboard() {
         </div>
 
         {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 32 }}>
           {[
-            { label: "Total", val: appointments.length, color: "#a78bfa" },
+            { label: "Appointments", val: appointments.length, color: "#a78bfa" },
             { label: "Pending", val: appointments.filter(a => a.status === "pending").length, color: "var(--amber)" },
             { label: "Accepted", val: appointments.filter(a => a.status === "accepted").length, color: "var(--teal)" },
             { label: "Completed", val: appointments.filter(a => a.status === "completed").length, color: "#61dafb" },
+            { label: "Online Consults", val: consultations.length, color: "#ffd93d" },
           ].map(s => (
-            <div key={s.label} className="glass-card" style={{ padding: "18px", textAlign: "center" }}>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "2rem", color: s.color }}>{s.val}</div>
-              <div style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>{s.label}</div>
+            <div key={s.label} className="glass-card" style={{ padding: "16px", textAlign: "center" }}>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.8rem", color: s.color }}>{s.val}</div>
+              <div style={{ color: "var(--text-secondary)", fontSize: "0.72rem" }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -146,9 +161,10 @@ export default function DoctorDashboard() {
         )}
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 4, marginBottom: 24, width: "fit-content" }}>
+        <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 4, marginBottom: 24, width: "fit-content", flexWrap: "wrap" }}>
           {[
             { key: "appointments", label: "📅 Appointments" },
+            { key: "consultations", label: "💬 Online Consultations" },
             { key: "slots", label: "🕐 Manage Availability" },
           ].map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key)} style={{
@@ -178,7 +194,6 @@ export default function DoctorDashboard() {
                 }}>{f}</button>
               ))}
             </div>
-
             {loading ? (
               <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--text-secondary)" }}>
                 <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} /> Loading...
@@ -200,7 +215,7 @@ export default function DoctorDashboard() {
                             {apt.status}
                           </span>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8, marginBottom: 8 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 }}>
                           {[["🏥", apt.hospital_name], ["🔬", apt.specialty], ["📅", apt.date], ["⏰", apt.time], ["🩺", apt.disease]].map(([icon, val]) => val && (
                             <div key={icon} style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{icon} {val}</div>
                           ))}
@@ -229,15 +244,60 @@ export default function DoctorDashboard() {
           </div>
         )}
 
+        {/* ONLINE CONSULTATIONS TAB */}
+        {activeTab === "consultations" && (
+          <div style={{ animation: "fadeIn 0.3s ease forwards" }}>
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.4rem", marginBottom: 20 }}>
+              Online Consultations
+            </h2>
+            {consultations.length === 0 ? (
+              <div className="glass-card" style={{ padding: 48, textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
+                <p style={{ color: "var(--text-secondary)" }}>No online consultations yet.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {consultations.map((con, i) => {
+                  const followUpActive = con.follow_up_expiry && new Date(con.follow_up_expiry) > new Date()
+                  const color = modeColor[con.mode] || "var(--teal)"
+                  return (
+                    <div key={con.id} className="glass-card" style={{ padding: "20px 24px", border: `1px solid ${color}25`, animation: `fadeInUp 0.4s ease ${i * 0.06}s both` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 20 }}>{modeIcon[con.mode] || "🩺"}</span>
+                            <h3 style={{ fontWeight: 700, fontSize: "0.95rem" }}>{con.patient_name}</h3>
+                            <span style={{ padding: "3px 10px", borderRadius: 100, fontSize: "0.72rem", fontWeight: 700, background: `${color}20`, color, border: `1px solid ${color}40` }}>
+                              {con.mode} Consultation
+                            </span>
+                            {followUpActive && (
+                              <span style={{ padding: "3px 10px", borderRadius: 100, fontSize: "0.72rem", background: "rgba(0,201,167,0.1)", color: "var(--teal)", border: "1px solid rgba(0,201,167,0.3)" }}>
+                                🔄 Follow-up Active till {new Date(con.follow_up_expiry).toLocaleDateString("en-IN")}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+                            {[["🔬", con.specialty], ["📅", new Date(con.created_at).toLocaleDateString("en-IN")], ["💰", `Rs.${con.fee}`], ["💬", con.reason]].map(([icon, val]) => val && (
+                              <span key={icon} style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{icon} {val}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* SLOTS TAB */}
         {activeTab === "slots" && (
           <div style={{ animation: "fadeIn 0.3s ease forwards" }}>
             <div style={{ marginBottom: 20 }}>
               <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.4rem", marginBottom: 6 }}>Manage Your Availability</h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Select which time slots you are available each day. Patients will only see your available slots.</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Select which time slots you are available each day.</p>
             </div>
-
-            {/* Day selector */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
               {DAYS.map(day => (
                 <button key={day} onClick={() => setSelectedDay(day)} style={{
@@ -252,18 +312,12 @@ export default function DoctorDashboard() {
                 </button>
               ))}
             </div>
-
-            {/* Slots grid */}
             <div className="glass-card" style={{ padding: "24px", marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <h3 style={{ fontSize: "0.9rem", fontWeight: 700 }}>{selectedDay} Slots</h3>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => setAvailableSlots(prev => ({ ...prev, [selectedDay]: [...ALL_SLOTS] }))} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--teal)", background: "rgba(0,201,167,0.1)", color: "var(--teal)", cursor: "pointer", fontFamily: "inherit", fontSize: "0.78rem" }}>
-                    Select All
-                  </button>
-                  <button onClick={() => setAvailableSlots(prev => ({ ...prev, [selectedDay]: [] }))} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontFamily: "inherit", fontSize: "0.78rem" }}>
-                    Clear All
-                  </button>
+                  <button onClick={() => setAvailableSlots(prev => ({ ...prev, [selectedDay]: [...ALL_SLOTS] }))} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--teal)", background: "rgba(0,201,167,0.1)", color: "var(--teal)", cursor: "pointer", fontFamily: "inherit", fontSize: "0.78rem" }}>Select All</button>
+                  <button onClick={() => setAvailableSlots(prev => ({ ...prev, [selectedDay]: [] }))} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontFamily: "inherit", fontSize: "0.78rem" }}>Clear All</button>
                 </div>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
@@ -284,8 +338,6 @@ export default function DoctorDashboard() {
                 })}
               </div>
             </div>
-
-            {/* Weekly overview */}
             <div className="glass-card" style={{ padding: "24px", marginBottom: 20 }}>
               <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 16 }}>Weekly Overview</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -297,9 +349,7 @@ export default function DoctorDashboard() {
                     ) : (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                         {availableSlots[day]?.map(slot => (
-                          <span key={slot} style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", color: "#a78bfa", fontSize: "0.72rem" }}>
-                            {slot}
-                          </span>
+                          <span key={slot} style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)", color: "#a78bfa", fontSize: "0.72rem" }}>{slot}</span>
                         ))}
                       </div>
                     )}
@@ -307,9 +357,7 @@ export default function DoctorDashboard() {
                 ))}
               </div>
             </div>
-
-            <button className="btn-primary" onClick={saveSlots}
-              style={{ padding: "12px 32px", fontSize: "0.95rem", background: "#a78bfa" }}>
+            <button className="btn-primary" onClick={saveSlots} style={{ padding: "12px 32px", fontSize: "0.95rem", background: "#a78bfa" }}>
               {slotsSaved ? "✅ Saved!" : "Save Availability →"}
             </button>
           </div>
@@ -318,3 +366,4 @@ export default function DoctorDashboard() {
     </div>
   )
 }
+

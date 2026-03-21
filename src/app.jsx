@@ -1,4 +1,4 @@
-﻿import React from "react"
+import React from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AppProvider, useApp } from "./context/AppContext"
 import { LangProvider } from "./context/LangContext"
@@ -53,12 +53,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <LangProvider>
-      <SocketProvider>
       <AppProvider>
-        <AppRoutes />
+        <SocketProvider>
+          <AppRoutes />
+        </SocketProvider>
       </AppProvider>
-    </SocketProvider>
     </LangProvider>
   )
 }
-

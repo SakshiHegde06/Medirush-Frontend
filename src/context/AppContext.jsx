@@ -13,13 +13,22 @@ export function AppProvider({ children }) {
   const [appointments, setAppointments] = useState([])
   const [consultations, setConsultations] = useState([])
   const [patients, setPatients] = useState([])
-  const [analysisResult, setAnalysisResult] = useState(null)
+  const [analysisResult, setAnalysisResult] = useState(() => {
+    const saved = localStorage.getItem("analysisResult")
+    return saved ? JSON.parse(saved) : null
+  })
 
   useEffect(() => {
     getAllDoctors().then(data => {
       if (Array.isArray(data)) setDoctors(data)
     }).catch(() => {})
   }, [])
+
+  const saveAnalysis = (result) => {
+    setAnalysisResult(result)
+    if (result) localStorage.setItem("analysisResult", JSON.stringify(result))
+    else localStorage.removeItem("analysisResult")
+  }
 
   const login = (type, userData) => {
     setUserType(type)
@@ -50,7 +59,7 @@ export function AppProvider({ children }) {
       doctors, verifyDoctor, removeDoctor, addDoctor,
       patients, appointments, updateAppointmentStatus, addAppointment,
       consultations, addConsultation,
-      analysisResult, setAnalysisResult,
+      analysisResult, setAnalysisResult: saveAnalysis,
     }}>
       {children}
     </AppContext.Provider>
@@ -58,3 +67,4 @@ export function AppProvider({ children }) {
 }
 
 export const useApp = () => useContext(AppContext)
+
