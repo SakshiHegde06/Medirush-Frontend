@@ -9,9 +9,9 @@ const portals = [
     subtitle: 'For Users & Patients',
     description: 'Check symptoms with AI, find specialists nearby, book appointments and track your health history.',
     features: ['AI Symptom Analysis', 'Find Nearby Hospitals', 'Book Appointments', 'Health History'],
-    color: '#00c9a7',
-    bg: 'rgba(0, 201, 167, 0.06)',
-    border: 'rgba(0, 201, 167, 0.25)',
+    color: '#22c55e',
+    bg: 'rgba(34, 197, 94, 0.06)',
+    border: 'rgba(34, 197, 94, 0.25)',
     route: '/patient/auth',
   },
   {
@@ -21,9 +21,9 @@ const portals = [
     subtitle: 'For Medical Professionals',
     description: 'Manage your appointments, view patient cases, accept or decline bookings and stay connected.',
     features: ['Manage Appointments', 'View Patient Details', 'Accept/Decline Slots', 'Profile Management'],
-    color: '#ffd93d',
-    bg: 'rgba(255, 217, 61, 0.06)',
-    border: 'rgba(255, 217, 61, 0.25)',
+    color: '#f59e0b',
+    bg: 'rgba(245, 158, 11, 0.06)',
+    border: 'rgba(245, 158, 11, 0.25)',
     route: '/doctor/auth',
   },
   {
@@ -33,9 +33,9 @@ const portals = [
     subtitle: 'For Administrators',
     description: 'Verify doctor licenses, manage the platform, oversee all appointments and monitor activity.',
     features: ['Verify Doctor Licenses', 'Add/Remove Doctors', 'View All Appointments', 'Platform Analytics'],
-    color: '#ff6b6b',
-    bg: 'rgba(255, 107, 107, 0.06)',
-    border: 'rgba(255, 107, 107, 0.25)',
+    color: '#f43f5e',
+    bg: 'rgba(244, 63, 94, 0.06)',
+    border: 'rgba(244, 63, 94, 0.25)',
     route: '/admin/auth',
   },
 ];
@@ -46,8 +46,8 @@ export default function Landing() {
   return (
     <div className="page-wrapper">
       {/* Background blobs */}
-      <div className="bg-blob" style={{ width: 600, height: 600, background: 'radial-gradient(circle, rgba(0,201,167,0.08) 0%, transparent 70%)', top: -200, left: -200 }} />
-      <div className="bg-blob" style={{ width: 400, height: 400, background: 'radial-gradient(circle, rgba(255,107,107,0.06) 0%, transparent 70%)', bottom: 0, right: -100 }} />
+      <div className="bg-blob" style={{ width: 600, height: 600, background: 'radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 70%)', top: -200, left: -200 }} />
+      <div className="bg-blob" style={{ width: 400, height: 400, background: 'radial-gradient(circle, rgba(244,63,94,0.06) 0%, transparent 70%)', bottom: 0, right: -100 }} />
 
       <Navbar />
 

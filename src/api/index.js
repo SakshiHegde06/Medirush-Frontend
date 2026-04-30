@@ -28,6 +28,9 @@ export const getAllDoctors = () =>
 export const adminGetAllDoctors = () =>
   fetch(`${BASE_URL}/admin/doctors`, { headers: headers() }).then(r => r.json())
 
+export const updateOnlineAvailability = (data) =>
+  fetch(`${BASE_URL}/doctors/online-availability`, { method: "PUT", headers: headers(), body: JSON.stringify(data) }).then(r => r.json())
+
 export const bookAppointment = (data) =>
   fetch(`${BASE_URL}/appointments`, { method: "POST", headers: headers(), body: JSON.stringify(data) }).then(r => r.json())
 

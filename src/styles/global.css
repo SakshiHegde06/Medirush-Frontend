@@ -1,21 +1,21 @@
 :root {
-  --navy: #0a0f1e;
-  --navy-mid: #111827;
-  --navy-light: #1a2540;
-  --teal: #00c9a7;
-  --teal-dark: #009e83;
-  --teal-glow: rgba(0, 201, 167, 0.15);
-  --coral: #ff6b6b;
-  --amber: #ffd93d;
-  --cream: #f0ede6;
+  --navy: #0f172a;
+  --navy-mid: #1e293b;
+  --navy-light: #334155;
+  --teal: #22c55e;
+  --teal-dark: #16a34a;
+  --teal-glow: rgba(34, 197, 94, 0.15);
+  --coral: #f43f5e;
+  --amber: #f59e0b;
+  --cream: #f1f5f9;
   --white: #ffffff;
-  --text-primary: #e8eaf0;
-  --text-secondary: #8892a4;
-  --text-dim: #4a5568;
-  --border: rgba(255, 255, 255, 0.08);
-  --card-bg: rgba(26, 37, 64, 0.6);
-  --glass: rgba(255, 255, 255, 0.04);
-  --shadow-teal: 0 0 40px rgba(0, 201, 167, 0.2);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-dim: #64748b;
+  --border: rgba(255, 255, 255, 0.1);
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --glass: rgba(255, 255, 255, 0.05);
+  --shadow-teal: 0 0 40px rgba(34, 197, 94, 0.25);
   --radius: 16px;
   --radius-sm: 8px;
 }

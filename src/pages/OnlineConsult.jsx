@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import { useApp } from "../context/AppContext"
 
-const specialties = ["All", "General Medicine", "Cardiology", "Gastroenterology", "Neurology", "Pulmonology", "Dermatology", "Psychiatry", "Urology", "Dermatology", "Musculoskeletal", "Endocrinology", "Infectious Disease"]
+const specialties = ["All", "General Medicine", "Cardiology", "Gastroenterology", "Neurology", "Pulmonology", "Dermatology"]
 
 export default function OnlineConsult() {
   const { doctors } = useApp()
@@ -12,31 +12,21 @@ export default function OnlineConsult() {
   const [search, setSearch] = useState("")
   const [sortBy, setSortBy] = useState("rating")
 
-  const verifiedDoctors = doctors.filter(d => d.status === "verified")
-
+  const verifiedDoctors = (doctors || []).filter(d => d.status === 'verified')
   const filtered = verifiedDoctors
     .filter(d => selectedSpecialty === "All" || d.specialty === selectedSpecialty)
-    .filter(d =>
-      d.name?.toLowerCase().includes(search.toLowerCase()) ||
-      d.specialty?.toLowerCase().includes(search.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy === "rating") return parseFloat(b.rating || 0) - parseFloat(a.rating || 0)
-      if (sortBy === "fee") return parseFloat(a.fee || 0) - parseFloat(b.fee || 0)
-      return (b.total_consultations || 0) - (a.total_consultations || 0)
-    })
-
-  const isAvailable = (doc) => doc.available === 1 || doc.available === true
+    .filter(d => (d.name || "").toLowerCase().includes(search.toLowerCase()) || (d.specialty || "").toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => sortBy === "rating" ? (b.rating || 0) - (a.rating || 0) : sortBy === "fee" ? (a.fee || 0) - (b.fee || 0) : (b.total_consultations || 0) - (a.total_consultations || 0))
 
   return (
     <div className="page-wrapper">
-      <div className="bg-blob" style={{ width: 500, height: 500, background: "radial-gradient(circle, rgba(0,201,167,0.07) 0%, transparent 70%)", top: 0, right: 0 }} />
+      <div className="bg-blob" style={{ width: 500, height: 500, background: "radial-gradient(circle, rgba(34,197,94,0.07) 0%, transparent 70%)", top: 0, right: 0 }} />
       <Navbar />
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px", position: "relative", zIndex: 1 }}>
 
         {/* Header */}
         <div style={{ marginBottom: 40, animation: "fadeInUp 0.5s ease forwards" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(0,201,167,0.1)", border: "1px solid rgba(0,201,167,0.3)", borderRadius: 100, padding: "6px 18px", marginBottom: 20, fontSize: "0.8rem", color: "var(--teal)", fontWeight: 600 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 100, padding: "6px 18px", marginBottom: 20, fontSize: "0.8rem", color: "var(--teal)", fontWeight: 600 }}>
             ✦ ONLINE CONSULTATION
           </div>
           <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "2.5rem", marginBottom: 12, letterSpacing: "-0.02em" }}>
@@ -62,18 +52,13 @@ export default function OnlineConsult() {
 
         {/* Filters */}
         <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap", alignItems: "center" }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search doctor or specialty..."
-            style={{ flex: 1, minWidth: 200, background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 16px", color: "var(--text-primary)", fontFamily: "inherit", fontSize: "0.88rem", outline: "none" }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search doctor or specialty..."
+            style={{ flex: 1, minWidth: 200, background: "rgba(210, 170, 170, 0.04)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 16px", color: "var(--text-primary)", fontFamily: "inherit", fontSize: "0.88rem", outline: "none" }} />
           <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-            style={{
-              background: "var(--navy-mid)", border: "1px solid var(--border)", borderRadius: 8,
-              padding: "10px 16px", color: "var(--text-primary)", fontFamily: "inherit",
-              fontSize: "0.85rem", outline: "none", cursor: "pointer",
-              appearance: "none", WebkitAppearance: "none", paddingRight: 36,
-            }}>
-            <option value="rating" style={{ background: "var(--navy-mid)" }}>Sort: Top Rated</option>
-            <option value="fee" style={{ background: "var(--navy-mid)" }}>Sort: Lowest Fee</option>
-            <option value="consultations" style={{ background: "var(--navy-mid)" }}>Sort: Most Consulted</option>
+            style={{ background: "lightblue", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 16px", color: "black", fontFamily: "inherit", fontSize: "0.85rem", outline: "none" }}>
+            <option value="rating">Sort: Top Rated</option>
+            <option value="fee">Sort: Lowest Fee</option>
+            <option value="consultations">Sort: Most Consulted</option>
           </select>
         </div>
 
@@ -83,7 +68,7 @@ export default function OnlineConsult() {
             <button key={s} onClick={() => setSelectedSpecialty(s)} style={{
               padding: "6px 16px", borderRadius: 100, border: "1px solid",
               borderColor: selectedSpecialty === s ? "var(--teal)" : "var(--border)",
-              background: selectedSpecialty === s ? "rgba(0,201,167,0.15)" : "transparent",
+              background: selectedSpecialty === s ? "rgba(34, 197, 94, 0.15)" : "transparent",
               color: selectedSpecialty === s ? "var(--teal)" : "var(--text-secondary)",
               cursor: "pointer", fontFamily: "inherit", fontSize: "0.8rem", fontWeight: 500,
               transition: "all 0.2s",
@@ -91,111 +76,86 @@ export default function OnlineConsult() {
           ))}
         </div>
 
-        {/* Count */}
-        {filtered.length > 0 && (
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: 16 }}>
-            Showing <strong style={{ color: "var(--teal)" }}>{filtered.length}</strong> doctors
-          </p>
-        )}
-
         {/* Doctor cards */}
-        {filtered.length === 0 ? (
-          <div className="glass-card" style={{ padding: 48, textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🩺</div>
-            <p style={{ color: "var(--text-secondary)" }}>No doctors found. Try a different specialty or search term.</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {filtered.map((doc, i) => (
-              <div key={doc.id} className="glass-card" style={{
-                padding: "24px", border: "1px solid var(--border)",
-                animation: `fadeInUp 0.4s ease ${i * 0.05}s both`,
-                transition: "all 0.2s",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,201,167,0.3)"; e.currentTarget.style.transform = "translateX(4px)" }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.transform = "translateX(0)" }}
-              >
-                <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {filtered.map((doc, i) => (
+            <div key={doc.id} className="glass-card" style={{
+              padding: "24px", border: "1px solid var(--border)",
+              animation: `fadeInUp 0.4s ease ${i * 0.07}s both`,
+              transition: "all 0.2s",
+            }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(34,197,94,0.3)"; e.currentTarget.style.transform = "translateX(4px)" }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.transform = "translateX(0)" }}
+            >
+              <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+                {/* Avatar */}
+                <div style={{ width: 70, height: 70, borderRadius: "50%", background: "linear-gradient(135deg, var(--teal), var(--teal-dark))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: "var(--navy)", fontWeight: 700, flexShrink: 0 }}>
+                  {(doc.name || "").split(" ")[1]?.[0] || "D"}
+                </div>
 
-                  {/* Avatar */}
-                  <div style={{ width: 70, height: 70, borderRadius: "50%", background: "linear-gradient(135deg, var(--teal), var(--teal-dark))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: "var(--navy)", fontWeight: 700, flexShrink: 0 }}>
-                    {doc.name?.split(" ")[1]?.[0] || doc.name?.[0] || "D"}
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" }}>
+                    <h3 style={{ fontSize: "1.1rem", fontWeight: 700 }}>{doc.name || "Doctor"}</h3>
+                    <span className="badge badge-success" style={{ fontSize: "0.7rem" }}>✓ Verified</span>
+                    {doc.available
+                      ? <span style={{ fontSize: "0.72rem", color: "var(--teal)", background: "rgba(34,197,94,0.1)", padding: "2px 8px", borderRadius: 100 }}>● Available Now</span>
+                      : <span style={{ fontSize: "0.72rem", color: "var(--text-dim)", background: "rgba(255,255,255,0.05)", padding: "2px 8px", borderRadius: 100 }}>○ Busy</span>
+                    }
+                  </div>
+                  <p style={{ color: "var(--teal)", fontSize: "0.85rem", fontWeight: 600, marginBottom: 4 }}>{doc.specialty || "General Medicine"}</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: 8 }}>{doc.qualification || "MBBS, MD"} · {doc.experience || 0} years exp · {doc.hospital || "Hospital"}</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: 10, lineHeight: 1.6 }}>{doc.about || "Experienced doctor"}</p>
+
+                  {/* Languages */}
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                   {doc.languages?.split(",").map(l => (
+  <span key={l} style={{ padding: "2px 10px", borderRadius: 100, background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", fontSize: "0.72rem", color: "var(--text-secondary)" }}>
+    🗣️ {l.trim()}
+  </span>
+))}
                   </div>
 
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 200 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" }}>
-                      <h3 style={{ fontSize: "1.1rem", fontWeight: 700 }}>{doc.name}</h3>
-                      <span className="badge badge-success" style={{ fontSize: "0.7rem" }}>✓ Verified</span>
-                      {isAvailable(doc)
-                        ? <span style={{ fontSize: "0.72rem", color: "var(--teal)", background: "rgba(0,201,167,0.1)", padding: "2px 8px", borderRadius: 100 }}>● Available Now</span>
-                        : <span style={{ fontSize: "0.72rem", color: "var(--text-dim)", background: "rgba(255,255,255,0.05)", padding: "2px 8px", borderRadius: 100 }}>○ Busy</span>
-                      }
+                  {/* Stats */}
+                  <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.3rem", color: "#ffd93d" }}>{"⭐".repeat(Math.floor(doc.rating || 0))} {doc.rating || 0}</div>
+                      <div style={{ color: "var(--text-dim)", fontSize: "0.7rem" }}>Rating</div>
                     </div>
-                    <p style={{ color: "var(--teal)", fontSize: "0.85rem", fontWeight: 600, marginBottom: 4 }}>{doc.specialty}</p>
-                    <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: 8 }}>
-                      {doc.qualification} · {doc.experience} yrs exp · {doc.hospital}
-                    </p>
-                    {doc.about && (
-                      <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: 10, lineHeight: 1.6 }}>{doc.about}</p>
-                    )}
-
-                    {/* Languages */}
-                    {doc.languages && (
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-                        {doc.languages.split(",").map(l => (
-                          <span key={l} style={{ padding: "2px 10px", borderRadius: 100, background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", fontSize: "0.72rem", color: "var(--text-secondary)" }}>
-                            🗣️ {l.trim()}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Stats */}
-                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.2rem", color: "#ffd93d" }}>
-                          {"⭐".repeat(Math.floor(parseFloat(doc.rating || 0)))} {parseFloat(doc.rating || 0).toFixed(1)}
-                        </div>
-                        <div style={{ color: "var(--text-dim)", fontSize: "0.7rem" }}>Rating</div>
-                      </div>
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.2rem", color: "var(--teal)" }}>
-                          {(doc.total_consultations || doc.totalConsultations || 0).toLocaleString()}
-                        </div>
-                        <div style={{ color: "var(--text-dim)", fontSize: "0.7rem" }}>Consultations</div>
-                      </div>
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.2rem", color: "#a78bfa" }}>
-                          {doc.experience} yrs
-                        </div>
-                        <div style={{ color: "var(--text-dim)", fontSize: "0.7rem" }}>Experience</div>
-                      </div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.3rem", color: "var(--teal)" }}>{(doc.total_consultations || doc.totalConsultations || 0).toLocaleString()}</div>
+                      <div style={{ color: "var(--text-dim)", fontSize: "0.7rem" }}>Consultations</div>
                     </div>
-                  </div>
-
-                  {/* Right — Fee + CTA */}
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexShrink: 0 }}>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: 2 }}>Consultation Fee</div>
-                      <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "2rem", color: "var(--teal)" }}>₹{doc.fee}</div>
-                      <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", marginTop: 2 }}>+ 7 day free follow-up</div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "1.3rem", color: "#a78bfa" }}>{doc.experience || 0} yrs</div>
+                      <div style={{ color: "var(--text-dim)", fontSize: "0.7rem" }}>Experience</div>
                     </div>
-                    <button
-                      className="btn-primary"
-                      onClick={() => navigate(`/patient/consult/${doc.id}`)}
-                      disabled={!isAvailable(doc)}
-                      style={{ padding: "10px 24px", fontSize: "0.88rem", opacity: isAvailable(doc) ? 1 : 0.5, cursor: isAvailable(doc) ? "pointer" : "not-allowed" }}
-                    >
-                      {isAvailable(doc) ? "Consult Now →" : "Unavailable"}
-                    </button>
                   </div>
                 </div>
+
+                {/* Right — Fee + CTA */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexShrink: 0 }}>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: 2 }}>Consultation Fee</div>
+                    <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "2rem", color: "var(--teal)" }}>₹{doc.fee || 499}</div>
+                    <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", marginTop: 2 }}>+ 7 day free follow-up</div>
+                  </div>
+                  <button
+                    className="btn-primary"
+                    onClick={() => navigate(`/patient/consult/${doc.id}`)}
+                    disabled={!doc.available}
+                    style={{ padding: "10px 24px", fontSize: "0.88rem", opacity: doc.available ? 1 : 0.5, cursor: doc.available ? "pointer" : "not-allowed" }}
+                  >
+                    {doc.available ? "Consult Now →" : "Unavailable"}
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
 }
+
+
